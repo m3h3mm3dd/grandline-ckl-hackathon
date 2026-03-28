@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Grandline — AI Race Engineer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surf:#12121a;--border:#1e1e2e;
+  --red:#e63946;--green:#2ecc71;--blue:#00b4d8;--yellow:#f4a261;
+  --text:#f0f0f5;--muted:#6b7280;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono','Courier New',monospace;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font)}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf);border-bottom:1px solid var(--border);height:44px;flex-shrink:0}
+.logo{font-size:1.2rem;font-weight:900;letter-spacing:3px;color:var(--red)}
+.logo b{color:var(--text)}
+.badge{background:var(--red);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:3px;letter-spacing:1px}
+.subtitle{color:var(--muted);font-size:.75rem}
+header select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:6px;font-size:.8rem;cursor:pointer;outline:none}
+.hstatus{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.dot.off{background:var(--red);animation:none!important}
+.dot{animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:1fr 1fr 300px;grid-template-rows:1fr;height:calc(100vh - 44px - 120px);gap:1px;background:var(--border)}
+
+/* ── PANELS ── */
+.panel{background:var(--surf);display:flex;flex-direction:column;overflow:hidden}
+.ptitle{font-size:.65rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+
+/* ── TRACK MAP ── */
+#track-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;position:relative}
+#track-svg{width:100%;height:100%;overflow:visible}
+.corner-label{font-size:7px;fill:#e63946;opacity:.7;font-family:var(--mono)}
+#car-pulse{animation:carPulse 1s infinite}
+@keyframes carPulse{0%,100%{r:7;opacity:1}50%{r:10;opacity:.5}}
+
+/* ── CAMERA ── */
+#cam-wrap{flex:1;position:relative;background:#000;overflow:hidden}
+#cam-a,#cam-b{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .15s ease}
+#cam-a{opacity:1}#cam-b{opacity:0}
+.cam-hud{position:absolute;inset:0;pointer-events:none}
+.cam-live{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:2px 8px;font-size:.65rem;font-weight:700;display:flex;align-items:center;gap:5px}
+.cam-livedot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
+#cam-speed-hud{position:absolute;top:8px;right:8px;font-size:2rem;font-weight:900;font-family:var(--mono);color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);line-height:1}
+#cam-speed-unit{font-size:.7rem;color:rgba(255,255,255,.6);text-align:right}
+#cam-thr-bar{position:absolute;bottom:0;left:0;height:4px;background:var(--green);width:0%;transition:width .1s}
+#cam-brk-bar{position:absolute;bottom:4px;left:0;height:4px;background:var(--red);width:0%;transition:width .1s}
+#cam-nosig{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:.8rem}
+#cam-gear-hud{position:absolute;bottom:16px;right:12px;font-size:3rem;font-weight:900;font-family:var(--mono);color:rgba(255,255,255,.9);text-shadow:0 2px 16px rgba(0,0,0,.9)}
+/* Steering indicator */
+#steer-wrap{position:absolute;bottom:12px;left:50%;transform:translateX(-50%)}
+#steer-ring{width:44px;height:44px}
+
+/* ── RIGHT PANEL: LIVE STATS ── */
+#stats-panel{padding:8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.stat-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.stat-block-title{font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:700}
+
+/* GG Diagram */
+#gg-canvas{width:100%;aspect-ratio:1;display:block;border-radius:4px}
+
+/* Tyre temps */
+.tyre-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.tyre-cell{background:var(--surf);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;transition:border-color .3s}
+.tyre-pos{font-size:.6rem;color:var(--muted);margin-bottom:2px}
+.tyre-temp{font-size:1.1rem;font-weight:800;font-family:var(--mono);color:var(--blue)}
+.tyre-cell.hot .tyre-temp{color:var(--red)}
+.tyre-cell.warm .tyre-temp{color:var(--yellow)}
+.tyre-cell.cold .tyre-temp{color:var(--blue)}
+
+/* Corner mini stats */
+.mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mini-stat{background:var(--surf);border:1px solid var(--border);border-radius:5px;padding:5px 8px;text-align:center}
+.mini-stat-label{font-size:.55rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.mini-stat-val{font-size:1rem;font-weight:800;font-family:var(--mono);margin-top:1px}
+
+/* ── BOTTOM ── */
+.bottom{height:120px;background:var(--surf);border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+
+/* Dashboard row */
+.dash{display:flex;align-items:stretch;gap:1px;background:var(--border);height:56px;flex-shrink:0}
+.dcell{background:var(--surf);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:0}
+.dlabel{font-size:.55rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:1px}
+.dval{font-size:1.5rem;font-weight:900;font-family:var(--mono);line-height:1}
+.dunit{font-size:.55rem;color:var(--muted)}
+.speed-color{color:var(--blue)}
+.bar-h{width:90%;max-width:100px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:2px}
+.bar-h-fill{height:100%;border-radius:3px;transition:width .1s}
+.thr-fill{background:var(--green)}
+.brk-fill{background:var(--red)}
+.rpm-fill{background:var(--blue)}
+
+/* Controls row */
+.ctrls{display:flex;align-items:center;gap:10px;padding:6px 14px;border-top:1px solid var(--border);flex:1}
+.lap-timer{font-size:1.4rem;font-weight:900;font-family:var(--mono);color:var(--red);min-width:100px}
+.lap-sel-row{display:flex;align-items:center;gap:6px}
+.lap-sel-row label{font-size:.72rem;color:var(--muted)}
+.progress-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
+.progress-bg{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+.progress-fg{height:100%;background:linear-gradient(90deg,var(--blue),var(--red));border-radius:3px;transition:width .15s;width:0%}
+.prog-label{font-size:.62rem;color:var(--muted);font-family:var(--mono)}
+btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 11px;border-radius:6px;cursor:pointer;font-size:.78rem;transition:all .15s;font-family:inherit}
+.cbtn:hover{border-color:var(--red);color:var(--red)}
+.cbtn.act{background:var(--red);border-color:var(--red);color:#fff}
+.play-btn{padding:5px 14px;font-size:.9rem}
+#debug-bar{font-size:.65rem;color:var(--muted);padding:2px 14px;border-top:1px solid var(--border);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">GRAND<b>LINE</b></div>
+  <div class="badge">A2RL</div>
+  <span class="subtitle">Race Engineer · Yas Marina</span>
+  <select id="sess-sel" onchange="onSession()"><option value="">Loading…</option></select>
+  <select id="lap-sel" onchange="onLap()" style="display:none"><option>—</option></select>
+  <button class="cbtn" id="path-btn" onclick="loadPath()" style="display:none;font-size:.72rem">Load Path</button>
+  <div class="hstatus">
+    <div class="dot" id="hdot"></div>
+    <span id="hstatus">Connecting…</span>
+  </div>
+</header>
+
+<!-- MAIN GRID -->
+<div class="layout">
+
+  <!-- TRACK MAP -->
+  <div class="panel">
+    <div class="ptitle">📍 Track Map — Yas Marina</div>
+    <div id="track-wrap">
+      <svg id="track-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <text x="200" y="205" text-anchor="middle" fill="#6b7280" font-size="13">Select a session</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- CAMERA -->
+  <div class="panel">
+    <div class="ptitle">📷 Onboard — Front Left</div>
+    <div id="cam-wrap">
+      <img id="cam-a" alt=""/>
+      <img id="cam-b" alt=""/>
+      <div class="cam-hud">
+        <div class="cam-live" id="cam-live" style="display:none">
+          <div class="cam-livedot"></div>LIVE · CAM FL
+        </div>
+        <div id="cam-speed-hud" style="display:none">
+          <div id="cam-spd-num">0</div>
+          <div id="cam-speed-unit">km/h</div>
+        </div>
+        <div id="cam-gear-hud" style="display:none"></div>
+        <!-- Steering wheel SVG -->
+        <div id="steer-wrap" style="display:none">
+          <svg id="steer-ring" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3"/>
+            <line id="steer-line" x1="22" y1="22" x2="22" y2="5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div id="cam-thr-bar"></div>
+      <div id="cam-brk-bar"></div>
+      <div id="cam-nosig">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+        NO SIGNAL — start replay
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: LIVE STATS -->
+  <div class="panel">
+    <div class="ptitle">📊 Live Telemetry</div>
+    <div id="stats-panel">
+
+      <!-- GG DIAGRAM -->
+      <div class="stat-block">
+        <div class="stat-block-title">GG Diagram (Traction Circle)</div>
+        <canvas id="gg-canvas" width="260" height="260"></canvas>
+      </div>
+
+      <!-- TYRE TEMPS -->
+      <div class="stat-block">
+        <div class="stat-block-title">Tyre Surface Temperature (°C)</div>
+        <div class="tyre-grid">
+          <div class="tyre-cell cold" id="t-fl"><div class="tyre-pos">FL</div><div class="tyre-temp" id="tv-fl">—</div></div>
+          <div class="tyre-cell cold" id="t-fr"><div class="tyre-pos">FR</div><div class="tyre-temp" id="tv-fr">—</div></div>
+          <div class="tyre-cell cold" id="t-rl"><div class="tyre-pos">RL</div><div class="tyre-temp" id="tv-rl">—</div></div>
+          <div class="tyre-cell cold" id="t-rr"><div class="tyre-pos">RR</div><div class="tyre-temp" id="tv-rr">—</div></div>
+        </div>
+      </div>
+
+      <!-- MINI STATS -->
+      <div class="stat-block">
+        <div class="stat-block-title">Session Stats</div>
+        <div class="mini-stats">
+          <div class="mini-stat"><div class="mini-stat-label">Max Speed</div><div class="mini-stat-val" id="ms-maxspd" style="color:var(--blue)">—</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Slip Angle</div><div class="mini-stat-val" id="ms-slip" style="color:var(--yellow)">—°</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Max Lat G</div><div class="mini-stat-val" id="ms-latg" style="color:var(--red)">—</div></div>
+          <div class="mini-stat"><div class="mini-stat-label">Lap Dist</div><div class="mini-stat-val" id="ms-dist" style="color:var(--muted)">—m</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /layout -->
+
+<!-- BOTTOM -->
+<div class="bottom">
+  <!-- DASHBOARD -->
+  <div class="dash">
+    <div class="dcell">
+      <div class="dlabel">Speed</div>
+      <div class="dval speed-color" id="d-spd">0</div>
+      <div class="dunit">km/h</div>
+    </div>
+    <div class="dcell">
+      <div class="dlabel">Gear</div>
+      <div class="dval" id="d-gear" style="font-size:2rem">N</div>
+    </div>
+    <div class="dcell">
+      <div class="dlabel">RPM</div>
+      <div class="dval" id="d-rpm" style="font-size:1.1rem">0</div>
+      <div class="bar-h"><div class="bar-h-fill rpm-fill" id="rpm-bar" style="width:0%"></div></div>
+    </div>
+    <div class="dcell">
+      <div class="dlabel">Throttle</div>
+      <div class="dval" id="d-thr" style="color:var(--green)">0%</div>
+      <div class="bar-h"><div class="bar-h-fill thr-fill" id="thr-bar" style="width:0%"></div></div>
+    </div>
+    <div class="dcell">
+      <div class="dlabel">Brake</div>
+      <div class="dval" id="d-brk" style="color:var(--red)">0%</div>
+      <div class="bar-h"><div class="bar-h-fill brk-fill" id="brk-bar" style="width:0%"></div></div>
+    </div>
+    <div class="dcell">
+      <div class="dlabel">Lat G</div>
+      <div class="dval" id="d-latg" style="color:var(--yellow)">0.0</div>
+      <div class="dunit">m/s²</div>
+    </div>
+    <div class="dcell">
+      <div class="dlabel">Lon G</div>
+      <div class="dval" id="d-long" style="color:var(--muted)">0.0</div>
+      <div class="dunit">m/s²</div>
+    </div>
+    <div class="dcell" style="flex:2;min-width:120px">
+      <div class="dlabel">Speed Trace</div>
+      <canvas id="mini-chart" style="width:100%;height:36px;display:block"></canvas>
+    </div>
+  </div>
+
+  <!-- CONTROLS ROW -->
+  <div class="ctrls">
+    <div class="lap-timer" id="lap-timer">0:00.000</div>
+    <div class="lap-sel-row">
+      <label>Lap:</label>
+      <select id="lap-sel-bottom" onchange="document.getElementById('lap-sel').value=this.value;onLap()" style="display:none"></select>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bg"><div class="progress-fg" id="prog-fg"></div></div>
+      <div class="prog-label" id="prog-label">— / — m</div>
+    </div>
+    <button class="cbtn play-btn" id="play-btn" onclick="togglePlay()">▶ Play</button>
+    <button class="cbtn" id="sp1" onclick="setSpeed(1)">1×</button>
+    <button class="cbtn" id="sp2" onclick="setSpeed(2)">2×</button>
+    <button class="cbtn" id="sp4" onclick="setSpeed(4)">4×</button>
+  </div>
+  <div id="debug-bar">frames: 0 | cam frames: 0 | session: —</div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let trackData = null, lapSummaries = [], currentSession = null, currentLap = 0;
+let speedFactor = 1, es = null, isPlaying = false;
+let frameCount = 0, camCount = 0;
+let svgXform = null, lapDistTotal = 0;
+let ggHistory = []; // {lat, lon, spd}
+let camActive = 'a'; // which img tag is front-buffer
+let sessionMaxSpd = 0, sessionMaxLatG = 0;
+let miniChartData = []; // last N speed values
+
+// ── 60 FPS car interpolation ──────────────────────────────────────────────────
+let carPrev = null, carNext = null, carRecvAt = 0, carIntervalMs = 100;
+let ggRedrawCounter = 0;
+let miniW = 0, miniH = 0; // cached canvas dims
+
+// Start RAF loop immediately — smooth car movement between SSE frames
+(function rafLoop() {
+  if (carPrev && carNext) {
+    const t = Math.min(1, (performance.now() - carRecvAt) / carIntervalMs);
+    const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // ease-in-out
+    moveCar(
+      carPrev.x + (carNext.x - carPrev.x) * ease,
+      carPrev.y + (carNext.y - carPrev.y) * ease
+    );
+  }
+  requestAnimationFrame(rafLoop);
+}());
+
+// ── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const r = await fetch(`${API}/preloaded`);
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    const sel = document.getElementById('sess-sel');
+    const labels = {good_lap:'🟢 Good Lap', fast_laps:'⚡ Fast Laps', wheel_to_wheel:'⚔️ Wheel to Wheel'};
+    sel.innerHTML = '<option value="">— Session —</option>';
+    for (const [k, v] of Object.entries(data)) {
+      if (v.ready) {
+        const o = document.createElement('option');
+        o.value = v.session_id;
+        o.textContent = `${labels[k]||k} (${v.lap_count} lap${v.lap_count!==1?'s':''})`;
+        sel.appendChild(o);
+      }
+    }
+    setStatus(true, 'Connected');
+  } catch(e) {
+    setStatus(false, 'Backend offline — is uvicorn running?');
+    setTimeout(init, 4000);
+  }
+}
+
+function setStatus(ok, msg) {
+  document.getElementById('hdot').className = 'dot' + (ok?'':' off');
+  document.getElementById('hstatus').textContent = msg;
+}
+
+// ── Session / Lap ────────────────────────────────────────────────────────────
+async function onSession() {
+  const sid = document.getElementById('sess-sel').value;
+  if (!sid) return;
+  currentSession = sid;
+  stopStream();
+  sessionMaxSpd = 0; sessionMaxLatG = 0;
+
+  try {
+    const [trackRes, lapsRes] = await Promise.all([
+      fetch(`${API}/analysis/${sid}/track`),
+      fetch(`${API}/analysis/${sid}/laps`),
+    ]);
+    trackData = await trackRes.json();
+    lapSummaries = await lapsRes.json();
+    renderTrack();
+    populateLapSelectors();
+    document.getElementById('path-btn').style.display = '';
+    setStatus(true, `Session loaded — ${lapSummaries.length} lap(s)`);
+  } catch(e) {
+    setStatus(false, 'Failed to load session: ' + e.message);
+  }
+}
+
+function populateLapSelectors() {
+  const opts = lapSummaries.map((l,i) =>
+    `<option value="${i}">Lap ${i+1} — ${fmtTime(l.lap_time_s)}</option>`
+  ).join('');
+  ['lap-sel','lap-sel-bottom'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = opts;
+    el.style.display = '';
+  });
+  lapDistTotal = trackData?.lap_distance_m || 0;
+  currentLap = 0;
+}
+
+function onLap() {
+  currentLap = parseInt(document.getElementById('lap-sel').value || '0');
+  document.getElementById('lap-sel-bottom').value = currentLap;
+  stopStream();
+  ggHistory = [];
+  drawGG();
+}
+
+// ── Track Map ────────────────────────────────────────────────────────────────
+function renderTrack() {
+  const svg = document.getElementById('track-svg');
+  const allPts = [...(trackData.inner||[]), ...(trackData.outer||[])];
+  if (!allPts.length) return;
+  const xs = allPts.map(p=>p.x), ys = allPts.map(p=>p.y);
+  const [x0,x1,y0,y1] = [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)];
+  const W=380, H=380, PAD=20;
+  const sx=(x1-x0)||(1), sy=(y1-y0)||(1);
+  const scale = Math.max(sx/(W-PAD*2), sy/(H-PAD*2));
+  const ox = PAD + (W-PAD*2-(x1-x0)/scale)/2;
+  const oy = PAD + (H-PAD*2-(y1-y0)/scale)/2;
+
+  svgXform = (x,y) => [ox+(x-x0)/scale, H-oy-(y-y0)/scale];
+  const toPath = pts => pts.map((p,i)=>{const[sx,sy]=svgXform(p.x,p.y);return`${i?'L':'M'}${sx.toFixed(1)},${sy.toFixed(1)}`}).join(' ');
+
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML = `
+    <defs>
+      <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="sglow"><feGaussianBlur stdDeviation="2"/></filter>
+    </defs>
+    <path d="${toPath(trackData.outer)} Z" fill="#111120" stroke="#222233" stroke-width="1.5"/>
+    <path d="${toPath(trackData.inner)} Z" fill="#0a0a0f" stroke="#222233" stroke-width="1"/>
+    <path d="${toPath(trackData.centerline)}" fill="none" stroke="#1a1a2e" stroke-width="1" stroke-dasharray="3,6" opacity=".5"/>
+    <g id="path-layer"></g>
+    ${(trackData.corners||[]).map(c=>{
+      const[cx,cy]=svgXform(c.x,c.y);
+      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="#e63946" opacity=".6"/>
+              <text class="corner-label" x="${(cx+5).toFixed(1)}" y="${(cy+3).toFixed(1)}">${c.id}</text>`;
+    }).join('')}
+    <circle id="car-glow" cx="-50" cy="-50" r="12" fill="#e63946" opacity=".25" filter="url(#glow)"/>
+    <circle id="car-dot" cx="-50" cy="-50" r="6" fill="#e63946"/>
+    <polyline id="trail" points="" fill="none" stroke="#e63946" stroke-width="2.5" opacity=".5" stroke-linecap="round" stroke-linejoin="round"/>
+  `;
+}
+
+let trailPts = [];
+function moveCar(x, y) {
+  if (!svgXform) return;
+  const [sx,sy] = svgXform(x, y);
+  const car = document.getElementById('car-dot');
+  const glow = document.getElementById('car-glow');
+  if (!car) return;
+  car.setAttribute('cx', sx.toFixed(1));
+  car.setAttribute('cy', sy.toFixed(1));
+  glow.setAttribute('cx', sx.toFixed(1));
+  glow.setAttribute('cy', sy.toFixed(1));
+  trailPts.push([sx, sy]);
+  if (trailPts.length > 60) trailPts.shift();
+  document.getElementById('trail').setAttribute('points',
+    trailPts.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
+  );
+}
+
+async function loadPath() {
+  if (!currentSession) return;
+  try {
+    const r = await fetch(`${API}/analysis/${currentSession}/lap/${currentLap}/positions?max_pts=800`);
+    const pts = await r.json();
+    if (!svgXform || !pts.length) return;
+    const maxS = Math.max(...pts.map(p=>p.speed), 1);
+    let html = '';
+    for (let i = 1; i < pts.length; i++) {
+      const [x1,y1] = svgXform(pts[i-1].x, pts[i-1].y);
+      const [x2,y2] = svgXform(pts[i].x, pts[i].y);
+      const t = pts[i].speed / maxS;
+      const r2 = Math.round(t*220), b2 = Math.round((1-t)*180);
+      html += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgb(${r2},60,${b2+20})" stroke-width="3.5" opacity=".8" stroke-linecap="round"/>`;
+    }
+    document.getElementById('path-layer').innerHTML = html;
+  } catch(e) { console.error('loadPath:', e); }
+}
+
+// ── Camera (double-buffer for smooth transitions) ─────────────────────────────
+function showCamera(jpeg_b64) {
+  const front = document.getElementById('cam-'+camActive);
+  const back  = document.getElementById('cam-'+(camActive==='a'?'b':'a'));
+  const src = 'data:image/jpeg;base64,' + jpeg_b64;
+  back.src = src;
+  back.onload = () => {
+    back.style.opacity = '1';
+    front.style.opacity = '0';
+    camActive = camActive === 'a' ? 'b' : 'a';
+  };
+  document.getElementById('cam-nosig').style.display = 'none';
+  document.getElementById('cam-live').style.display = 'flex';
+  document.getElementById('cam-speed-hud').style.display = 'block';
+  document.getElementById('cam-gear-hud').style.display = 'block';
+  document.getElementById('steer-wrap').style.display = 'block';
+}
+
+function updateSteer(rad) {
+  const deg = rad * 180 / Math.PI;
+  const clamped = Math.max(-180, Math.min(180, deg));
+  const line = document.getElementById('steer-line');
+  // Rotate line around center (22,22)
+  line.setAttribute('transform', `rotate(${clamped.toFixed(1)}, 22, 22)`);
+}
+
+// ── GG Diagram ────────────────────────────────────────────────────────────────
+function drawGG() {
+  const canvas = document.getElementById('gg-canvas');
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  const cx = W/2, cy = H/2, r = Math.min(W,H)/2 - 8;
+  const G = 20; // m/s² scale
+
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid circles
+  [0.25,0.5,0.75,1.0].forEach(f => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r*f, 0, Math.PI*2);
+    ctx.strokeStyle = f===1 ? '#2a2a3e' : '#1a1a2a';
+    ctx.lineWidth = f===1 ? 1.5 : 1;
+    ctx.stroke();
+  });
+  // Axes
+  ctx.beginPath(); ctx.moveTo(cx-r,cy); ctx.lineTo(cx+r,cy);
+  ctx.moveTo(cx,cy-r); ctx.lineTo(cx,cy+r);
+  ctx.strokeStyle = '#1e1e2e'; ctx.lineWidth = 1; ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#4b5563'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('BRAKE', cx, cy-r+12);
+  ctx.fillText('ACCEL', cx, cy+r-4);
+  ctx.fillText('L', cx-r+8, cy+4);
+  ctx.fillText('R', cx+r-4, cy+4);
+
+  // Scatter history
+  const N = Math.min(ggHistory.length, 800);
+  for (let i = ggHistory.length - N; i < ggHistory.length; i++) {
+    const p = ggHistory[i];
+    const age = (i - (ggHistory.length - N)) / N;
+    const sx = cx + (p.lat/G)*r;
+    const sy = cy - (p.lon/G)*r;
+    const spd_t = Math.min(1, p.spd/280);
+    const red = Math.round(spd_t*220), blue = Math.round((1-spd_t)*180);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${red},60,${blue+20},${0.2+age*0.8})`;
+    ctx.fill();
+  }
+
+  // Current dot
+  if (ggHistory.length) {
+    const p = ggHistory[ggHistory.length-1];
+    const sx = cx + (p.lat/G)*r;
+    const sy = cy - (p.lon/G)*r;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#e63946';
+    ctx.shadowColor = '#e63946';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+// ── Tyre temps ────────────────────────────────────────────────────────────────
+function updateTyres(f) {
+  const corners = ['fl','fr','rl','rr'];
+  corners.forEach(c => {
+    const val = f['tyre_temp_'+c];
+    const el = document.getElementById('tv-'+c);
+    const cell = document.getElementById('t-'+c);
+    if (val != null && val > 0) {
+      el.textContent = val.toFixed(0);
+      cell.className = 'tyre-cell ' + (val > 110 ? 'hot' : val > 80 ? 'warm' : 'cold');
+    }
+  });
+}
+
+// ── Mini speed chart ──────────────────────────────────────────────────────────
+function drawMiniChart() {
+  const canvas = document.getElementById('mini-chart');
+  // Only resize canvas when dimensions actually change (avoids expensive reflow every frame)
+  const newW = canvas.offsetWidth * window.devicePixelRatio;
+  const newH = canvas.offsetHeight * window.devicePixelRatio;
+  if (newW !== miniW || newH !== miniH || newW === 0) {
+    miniW = newW; miniH = newH;
+    canvas.width = miniW; canvas.height = miniH;
+  }
+  const W = miniW, H = miniH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0,0,W,H);
+
+  const N = miniChartData.length;
+  if (N < 2) return;
+  const maxS = 300;
+  const pts = miniChartData.slice(-200);
+
+  // Throttle fill
+  ctx.beginPath(); ctx.moveTo(0,H);
+  pts.forEach((d,i) => { ctx.lineTo(i/(pts.length-1)*W, H - d.thr*H*0.5); });
+  ctx.lineTo(W,H); ctx.closePath();
+  ctx.fillStyle = 'rgba(46,204,113,.12)'; ctx.fill();
+
+  // Brake fill
+  ctx.beginPath(); ctx.moveTo(0,H);
+  pts.forEach((d,i) => { ctx.lineTo(i/(pts.length-1)*W, H - d.brk*H*0.5); });
+  ctx.lineTo(W,H); ctx.closePath();
+  ctx.fillStyle = 'rgba(230,57,70,.12)'; ctx.fill();
+
+  // Speed line (gradient)
+  const grad = ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'#00b4d8'); grad.addColorStop(1,'#e63946');
+  ctx.beginPath();
+  pts.forEach((d,i) => {
+    const x=i/(pts.length-1)*W, y=H-(d.spd/maxS)*H;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.strokeStyle = grad; ctx.lineWidth = 1.5*window.devicePixelRatio; ctx.stroke();
+}
+
+// ── Stream ────────────────────────────────────────────────────────────────────
+function togglePlay() {
+  isPlaying ? stopStream() : startStream();
+}
+
+function startStream() {
+  if (!currentSession) { alert('Select a session first'); return; }
+  stopStream();
+  isPlaying = true;
+  frameCount = 0; camCount = 0; trailPts = [];
+  ggHistory = []; miniChartData = [];
+  ggRedrawCounter = 0;
+  carPrev = null; carNext = null; // reset car interpolation
+  document.getElementById('play-btn').textContent = '⏸ Pause';
+
+  const url = `${API}/stream/${currentSession}/lap/${currentLap}?speed=${speedFactor}`;
+  es = new EventSource(url);
+
+  es.addEventListener('frame', e => {
+    const f = JSON.parse(e.data);
+    frameCount++;
+    updateDash(f);
+
+    // Feed interpolation engine (rAF loop draws the car smoothly)
+    carPrev = carNext || {x: f.x, y: f.y};
+    carNext = {x: f.x, y: f.y};
+    carRecvAt = performance.now();
+    carIntervalMs = (1000 / 10) / speedFactor; // adapt to current speed factor
+
+    ggHistory.push({lat:f.lat_acc, lon:f.lon_acc, spd:f.speed});
+    if (ggHistory.length > 2000) ggHistory.shift();
+    miniChartData.push({spd:f.speed, thr:f.throttle, brk:f.brake});
+    if (miniChartData.length > 300) miniChartData.shift();
+    sessionMaxSpd = Math.max(sessionMaxSpd, f.speed);
+    sessionMaxLatG = Math.max(sessionMaxLatG, Math.abs(f.lat_acc||0));
+    document.getElementById('ms-maxspd').textContent = Math.round(sessionMaxSpd)+'km/h';
+    document.getElementById('ms-latg').textContent = sessionMaxLatG.toFixed(1);
+    document.getElementById('ms-slip').textContent = ((f.slip_angle||0)*180/Math.PI).toFixed(1)+'°';
+    document.getElementById('ms-dist').textContent = f.distance_m ? Math.round(f.distance_m)+'m' : '—m';
+
+    // Throttle expensive canvas redraws — every 2nd frame
+    ggRedrawCounter++;
+    if (ggRedrawCounter % 2 === 0) drawGG();
+    drawMiniChart();
+    updateDebug();
+    updateTyres(f);
+  });
+
+  es.addEventListener('camera_frame', e => {
+    const { jpeg_b64 } = JSON.parse(e.data);
+    camCount++;
+    showCamera(jpeg_b64);
+    updateDebug();
+  });
+
+  es.addEventListener('lap_end', e => {
+    const s = JSON.parse(e.data);
+    document.getElementById('play-btn').textContent = '▶ Replay';
+    isPlaying = false;
+    es.close(); es = null;
+  });
+
+  es.onerror = () => {
+    if (isPlaying) setStatus(false, 'Stream error — check backend');
+  };
+}
+
+function stopStream() {
+  if (es) { es.close(); es = null; }
+  isPlaying = false;
+  document.getElementById('play-btn').textContent = '▶ Play';
+}
+
+function setSpeed(s) {
+  speedFactor = s;
+  [1,2,4].forEach(n => {
+    const el = document.getElementById('sp'+n);
+    el.classList.toggle('act', n===s);
+  });
+  if (isPlaying) startStream();
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+function updateDash(f) {
+  const spd = Math.round(f.speed||0);
+  const thr = Math.round((f.throttle||0)*100);
+  const brk = Math.round((f.brake||0)*100);
+  const rpm = Math.round(f.rpm||0);
+
+  // Speed with colour
+  const t = Math.min(1, spd/280);
+  const r2 = Math.round(t*220), bl = Math.round((1-t)*180);
+  const spd_el = document.getElementById('d-spd');
+  spd_el.textContent = spd;
+  spd_el.style.color = `rgb(${r2},100,${bl+20})`;
+
+  document.getElementById('d-gear').textContent = f.gear||'N';
+  document.getElementById('d-rpm').textContent = rpm.toLocaleString();
+  document.getElementById('rpm-bar').style.width = Math.min(100,rpm/12000*100)+'%';
+  document.getElementById('d-thr').textContent = thr+'%';
+  document.getElementById('d-brk').textContent = brk+'%';
+  document.getElementById('thr-bar').style.width = thr+'%';
+  document.getElementById('brk-bar').style.width = brk+'%';
+  document.getElementById('d-latg').textContent = (f.lat_acc||0).toFixed(1);
+  document.getElementById('d-long').textContent = (f.lon_acc||0).toFixed(1);
+
+  // Lap timer & progress
+  document.getElementById('lap-timer').textContent = fmtTime(f.t||0);
+  const dist = f.distance_m||0, total = lapDistTotal||1;
+  const pct = Math.min(100, dist/total*100);
+  document.getElementById('prog-fg').style.width = pct+'%';
+  document.getElementById('prog-label').textContent = `${Math.round(dist)} / ${Math.round(total)} m`;
+
+  // Camera overlays
+  document.getElementById('cam-spd-num').textContent = spd;
+  document.getElementById('cam-gear-hud').textContent = f.gear||'N';
+  document.getElementById('cam-thr-bar').style.width = thr+'%';
+  document.getElementById('cam-brk-bar').style.width = brk+'%';
+  updateSteer(f.steering||0);
+}
+
+function updateDebug() {
+  document.getElementById('debug-bar').textContent =
+    `frames: ${frameCount} | cam: ${camCount} | session: ${currentSession||'—'} | lag: ${speedFactor}×`;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmtTime(s) {
+  if (s == null) return '—';
+  const m = Math.floor(s/60);
+  const sec = (s%60).toFixed(3).padStart(6,'0');
+  return `${m}:${sec}`;
+}
+
+// Default 1× active
+document.getElementById('sp1').classList.add('act');
+
+init();
+</script>
+</body>
+</html>

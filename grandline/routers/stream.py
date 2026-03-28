@@ -1,0 +1,149 @@
+"""
+SSE stream — real-time lap replay with onboard camera and AI tips.
+
+Connect: GET /stream/{session_id}/lap/{lap_index}?speed=1.0
+
+Events emitted:
+  frame         → TelemetryFrame JSON  (~10 Hz)
+  camera_frame  → { t, jpeg_b64 }      (~2 Hz, actual onboard footage)
+  coach_tip     → { t, tip }           (every ~8 s)
+  lap_end       → LapSummary JSON
+"""
+
+from __future__ import annotations
+
+import asyncio
+import base64
+import bisect
+import json
+import logging
+from typing import AsyncGenerator
+
+import os
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
+
+from services.session_store import get_session
+from services.ai_coach import coach_realtime_tip
+
+log = logging.getLogger(__name__)
+router = APIRouter()
+
+_STREAM_HZ       = 20     # telemetry frames per second sent to client (source is 100 Hz)
+_CAMERA_EVERY_N  = 2      # emit a camera frame every N telemetry frames (~10 Hz camera)
+_TIP_INTERVAL_S  = 8      # seconds between AI coaching tips
+_AI_ENABLED      = bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+
+def _sse(event: str, data: dict | str) -> str:
+    payload = data if isinstance(data, str) else json.dumps(data)
+    return f"event: {event}\ndata: {payload}\n\n"
+
+
+def _nearest_camera_frame(
+    cam_frames: list[tuple[float, bytes]],
+    target_ts: float,
+) -> bytes | None:
+    """Binary-search for the camera frame closest to target_ts."""
+    if not cam_frames:
+        return None
+    timestamps = [f[0] for f in cam_frames]
+    idx = bisect.bisect_left(timestamps, target_ts)
+    if idx == 0:
+        return cam_frames[0][1]
+    if idx >= len(cam_frames):
+        return cam_frames[-1][1]
+    before = cam_frames[idx - 1]
+    after  = cam_frames[idx]
+    return (before if abs(before[0] - target_ts) <= abs(after[0] - target_ts) else after)[1]
+
+
+async def _generate(
+    session_id: str,
+    lap_index: int,
+    speed_factor: float,
+) -> AsyncGenerator[str, None]:
+    s = get_session(session_id)
+    if not s or not s._ready.is_set():
+        yield _sse("error", {"message": "session not ready"})
+        return
+
+    if lap_index >= len(s.lap_details):
+        yield _sse("error", {"message": "lap not found"})
+        return
+
+    detail     = s.lap_details[lap_index]
+    frames     = detail.frames
+    cam_frames = s.camera_laps[lap_index] if lap_index < len(s.camera_laps) else []
+
+    # Downsample telemetry to stream Hz (source is ~100 Hz)
+    step = max(1, int(100 / _STREAM_HZ))
+    stream_frames = frames[::step]
+
+    if not stream_frames:
+        yield _sse("error", {"message": "no frames"})
+        return
+
+    interval    = (1.0 / _STREAM_HZ) / speed_factor
+    last_tip_t  = -999.0
+    cam_counter = 0
+
+    for i, frame in enumerate(stream_frames):
+        progress = i / max(len(stream_frames) - 1, 1)
+
+        # Telemetry frame
+        yield _sse("frame", frame.model_dump())
+
+        # Camera frame (every _CAMERA_EVERY_N telemetry frames)
+        cam_counter += 1
+        if cam_counter >= _CAMERA_EVERY_N:
+            cam_counter = 0
+            jpeg = _nearest_camera_frame(cam_frames, frame.ts)
+            if jpeg:
+                b64 = base64.b64encode(jpeg).decode("ascii")
+                yield _sse("camera_frame", {"t": frame.t, "jpeg_b64": b64})
+
+        # AI coaching tip (only when API key is configured)
+        if _AI_ENABLED and frame.t - last_tip_t >= _TIP_INTERVAL_S:
+            last_tip_t = frame.t
+            summary = {
+                "speed":    frame.speed,
+                "throttle": frame.throttle,
+                "brake":    frame.brake,
+                "lat_acc":  frame.lat_acc,
+                "gear":     frame.gear,
+            }
+            try:
+                loop = asyncio.get_event_loop()
+                tip = await loop.run_in_executor(
+                    None, coach_realtime_tip, summary, progress
+                )
+                if tip:
+                    yield _sse("coach_tip", {"t": frame.t, "tip": tip})
+            except Exception as e:
+                log.warning("Tip generation failed: %s", e)
+
+        await asyncio.sleep(interval)
+
+    yield _sse("lap_end", detail.summary.model_dump())
+
+
+@router.get("/{session_id}/lap/{lap_index}")
+async def stream_lap(
+    session_id: str,
+    lap_index: int,
+    speed: float = Query(1.0, ge=0.1, le=10.0, description="Replay speed factor"),
+):
+    s = get_session(session_id)
+    if not s:
+        raise HTTPException(404, "Session not found")
+
+    return StreamingResponse(
+        _generate(session_id, lap_index, speed),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",  # prevent any proxy/middleware gzip buffering
+        },
+    )
