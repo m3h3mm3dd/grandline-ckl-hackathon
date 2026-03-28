@@ -148,3 +148,11 @@ def _decode_and_enrich(s: Session, corner_map: CornerMap) -> None:
 
     # Load camera frames from MCAP and bin them into laps by timestamp
     s._load_camera_frames()
+
+    # GPS-calibrate corner map using the first lap's GPS trace (most accurate)
+    if s.raw_laps and corner_map.centerline is not None:
+        try:
+            corner_map.calibrate_from_gps(s.raw_laps[0])
+            log.info("    Corner map GPS-calibrated: %d corners", len(corner_map.corners))
+        except Exception as e:
+            log.warning("    Corner calibration failed: %s", e)

@@ -11,7 +11,8 @@
   --text:#f0f0f5;--muted:#6b7280;
   --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono','Courier New',monospace;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font)}
+html{height:100%;overflow:hidden}
+body{height:100%;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--font)}
 
 /* ── HEADER ── */
 header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf);border-bottom:1px solid var(--border);height:44px;flex-shrink:0}
@@ -27,16 +28,47 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* ── LAYOUT ── */
-.layout{display:grid;grid-template-columns:1fr 1fr 300px;grid-template-rows:1fr;height:calc(100vh - 44px - 120px);gap:1px;background:var(--border)}
+.layout{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;flex:1;min-height:0;gap:1px;background:var(--border)}
+
+/* ── LEFT DRAWER ── */
+.ldrawer{
+  position:fixed;left:-290px;top:44px;bottom:0;width:288px;
+  background:var(--surf);border-right:2px solid var(--red);
+  transition:left .22s cubic-bezier(.4,0,.2,1);
+  z-index:200;overflow-y:auto;padding:8px;
+  display:flex;flex-direction:column;gap:6px;
+  /* account for bottom bar height */
+  bottom:0;
+}
+.ldrawer.open{left:0}
+/* Drawer toggle tab */
+.drawer-tab{
+  position:fixed;left:0;top:50%;transform:translateY(-50%);
+  z-index:201;background:var(--red);border:none;color:#fff;
+  padding:14px 5px;border-radius:0 8px 8px 0;cursor:pointer;
+  writing-mode:vertical-lr;font-size:.6rem;font-weight:800;
+  letter-spacing:2px;text-transform:uppercase;
+  transition:left .22s cubic-bezier(.4,0,.2,1);
+  font-family:var(--font);
+}
+.drawer-tab.open{left:288px}
+/* Overlay dim when drawer open */
+.drawer-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+  z-index:199;
+}
+.drawer-overlay.open{display:block}
 
 /* ── PANELS ── */
 .panel{background:var(--surf);display:flex;flex-direction:column;overflow:hidden}
 .ptitle{font-size:.65rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
 
 /* ── TRACK MAP ── */
-#track-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;position:relative}
-#track-svg{width:100%;height:100%;overflow:visible}
-.corner-label{font-size:7px;fill:#e63946;opacity:.7;font-family:var(--mono)}
+#track-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:6px;position:relative;overflow:hidden;min-height:0}
+/* SVG must NOT stretch to fill — it preserves its own aspect ratio */
+#track-svg{max-width:100%;max-height:100%;display:block;overflow:visible}
+.corner-label{font-size:10px;fill:#ff4455;opacity:1;font-weight:800;font-family:var(--mono)}
+.corner-bg{fill:rgba(10,10,15,.9);rx:3}
 #car-pulse{animation:carPulse 1s infinite}
 @keyframes carPulse{0%,100%{r:7;opacity:1}50%{r:10;opacity:.5}}
 
@@ -57,8 +89,140 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 #steer-wrap{position:absolute;bottom:12px;left:50%;transform:translateX(-50%)}
 #steer-ring{width:44px;height:44px}
 
+/* ══════════════════════════════════════════════════════════════
+   CAMERA HUD  — matches reference image layout exactly
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── SPEED COMPARISON BAR (bottom-centre, like reference image) ── */
+#speed-compare{
+  position:absolute;
+  bottom:18px;left:50%;transform:translateX(-50%);
+  display:none;          /* shown on first camera_frame */
+  align-items:center;gap:0;
+  font-family:var(--mono);white-space:nowrap;
+  background:rgba(10,12,20,.72);
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(10px);
+  overflow:hidden;
+  min-width:180px;
+}
+.sc-half{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:6px 18px 5px;
+}
+.sc-label{
+  font-size:.48rem;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.45);margin-bottom:1px;
+}
+#sc-best{font-size:1.55rem;font-weight:900;color:#fbbf24;line-height:1;text-shadow:0 0 12px rgba(251,191,36,.4)}
+#sc-you {font-size:1.55rem;font-weight:900;color:#60a5fa;line-height:1;text-shadow:0 0 12px rgba(96,165,250,.4)}
+/* Middle divider with animated bars (like reference image) */
+#sc-middle{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:4px 8px;border-left:1px solid rgba(255,255,255,.1);border-right:1px solid rgba(255,255,255,.1);
+}
+.sc-bar-row{display:flex;gap:2px;align-items:flex-end;height:16px}
+.sc-bar{width:4px;border-radius:2px 2px 0 0;background:rgba(255,255,255,.25);transition:height .2s,background .2s}
+#sc-delta{
+  font-size:.6rem;font-weight:800;color:#94a3b8;
+  letter-spacing:.5px;text-align:center;margin-top:1px;white-space:nowrap;
+}
+
+/* ── CORNER WARNING (right-centre, like reference image) ── */
+#corner-warn{
+  position:absolute;
+  top:50%;right:14px;transform:translateY(-50%);
+  display:none;
+  text-align:right;
+  pointer-events:none;
+  max-width:220px;
+}
+#cw-text{
+  font-size:1rem;font-weight:800;color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 30px rgba(0,0,0,.6);
+  line-height:1.25;
+}
+#cw-sub{
+  font-size:.78rem;font-weight:700;
+  text-shadow:0 2px 8px rgba(0,0,0,.9);
+  margin-top:3px;display:flex;align-items:center;justify-content:flex-end;gap:5px;
+}
+#cw-dot{
+  width:7px;height:7px;border-radius:50%;display:inline-block;
+  animation:blink .55s infinite;flex-shrink:0;
+}
+
+/* ── BRAKE ZONE X MARKERS ── */
+#brake-markers{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.brk-x{
+  position:absolute;
+  font-size:1.25rem;font-weight:900;color:#ef4444;
+  text-shadow:0 0 8px rgba(239,68,68,.9);
+  animation:brkFade 2.2s ease forwards;
+  opacity:0;
+}
+@keyframes brkFade{
+  0%  {opacity:0;transform:translateY(8px) scale(.6)}
+  18% {opacity:1;transform:translateY(0)   scale(1.15)}
+  45% {opacity:.9;transform:translateY(0)  scale(1)}
+  100%{opacity:0;transform:translateY(-14px) scale(.9)}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COACHING RADIO PANEL (below camera)
+   ══════════════════════════════════════════════════════════════ */
+#coaching-panel{
+  background:var(--surf);
+  border-top:2px solid var(--border);
+  flex-shrink:0;
+  height:76px;
+  display:flex;
+  align-items:stretch;
+  position:relative;
+  overflow:hidden;
+}
+#radio-icon-cell{
+  width:60px;min-width:60px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;
+  background:var(--bg);
+  border-right:1px solid var(--border);
+  transition:background .5s,font-size .2s;
+  flex-shrink:0;
+}
+#radio-text-cell{
+  flex:1;padding:9px 12px;display:flex;flex-direction:column;
+  justify-content:center;overflow:hidden;
+}
+#radio-headline{
+  font-size:.76rem;font-weight:800;letter-spacing:.6px;
+  color:#f0f0f5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#radio-detail{
+  font-size:.64rem;color:var(--muted);line-height:1.45;margin-top:3px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+#radio-kind-badge{
+  position:absolute;top:7px;right:10px;
+  font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;font-weight:800;
+}
+#radio-queue-dot{
+  position:absolute;bottom:7px;right:10px;
+  font-size:.54rem;color:var(--muted);font-family:var(--mono);
+}
+/* Kind border accents */
+.radio-feedback       {border-left:3px solid #60a5fa}
+.radio-recommendation {border-left:3px solid #fbbf24}
+.radio-motivation     {border-left:3px solid #4ade80}
+/* Entry animation */
+@keyframes radioSlide{from{transform:translateY(110%);opacity:0}to{transform:translateY(0);opacity:1}}
+.radio-slide{animation:radioSlide .32s cubic-bezier(.22,1,.36,1) both}
+
 /* ── RIGHT PANEL: LIVE STATS ── */
-#stats-panel{padding:8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+/* #stats-panel moved to left drawer (.ldrawer) */
 .stat-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .stat-block-title{font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:700}
 
@@ -81,7 +245,18 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 .mini-stat-val{font-size:1rem;font-weight:800;font-family:var(--mono);margin-top:1px}
 
 /* ── BOTTOM ── */
-.bottom{height:120px;background:var(--surf);border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.bottom{background:var(--surf);border-top:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+/* ── ANALYSIS ROW (fixed height, shown after session load) ── */
+.analysis-row{flex-shrink:0;height:200px}
+
+/* ── SYSTEMS ROW (race flags + engine + AI health) ── */
+.sys-row{display:flex;align-items:stretch;gap:1px;background:var(--border);height:36px;flex-shrink:0;border-top:1px solid var(--border)}
+.scell{background:var(--surf);display:flex;align-items:center;gap:5px;padding:0 10px;font-size:.65rem;white-space:nowrap;min-width:0}
+.scell-label{color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-size:.55rem}
+.scell-val{font-family:var(--mono);font-weight:700}
+.sbar{height:6px;border-radius:3px;min-width:50px;flex:1;background:var(--bg);overflow:hidden;position:relative}
+.sbar-fill{height:100%;border-radius:3px;transition:width .3s}
+#flag-badge{padding:3px 10px;border-radius:4px;font-size:.65rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:#1e1e2e;color:#6b7280}
 
 /* Dashboard row */
 .dash{display:flex;align-items:stretch;gap:1px;background:var(--border);height:56px;flex-shrink:0}
@@ -95,6 +270,29 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 .thr-fill{background:var(--green)}
 .brk-fill{background:var(--red)}
 .rpm-fill{background:var(--blue)}
+
+/* ── ANALYSIS ROW ── */
+.analysis-row{display:grid;grid-template-columns:1fr 1fr 280px;gap:1px;background:var(--border);border-top:2px solid var(--border);max-height:220px}
+.ablock{background:var(--surf);padding:10px 12px;display:flex;flex-direction:column;overflow:hidden}
+.ablabel{font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;flex-shrink:0;display:flex;align-items:center;gap:8px}
+.ablabel select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:2px 6px;border-radius:4px;font-size:.7rem;cursor:pointer}
+.ablabel button{background:var(--red);border:none;color:#fff;padding:2px 8px;border-radius:4px;font-size:.65rem;cursor:pointer;font-weight:700}
+#delta-canvas{width:100%;flex:1;display:block;min-height:0}
+/* corner table */
+.ctable{flex:1;overflow-y:auto;min-height:0}
+.ctable table{width:100%;border-collapse:collapse;font-size:.65rem;font-family:var(--mono)}
+.ctable th{color:var(--muted);text-align:right;padding:1px 5px;position:sticky;top:0;background:var(--surf);font-weight:600;letter-spacing:.5px}
+.ctable th:first-child{text-align:left}
+.ctable td{text-align:right;padding:2px 5px;color:var(--text);border-bottom:1px solid var(--border)}
+.ctable td:first-child{text-align:left;color:var(--red);font-weight:700}
+.ctable tr:hover td{background:rgba(255,255,255,.03)}
+/* purple lap */
+.purple-card{background:linear-gradient(135deg,rgba(150,0,200,.15),rgba(100,0,150,.08));border:1px solid rgba(180,0,255,.25);border-radius:8px;padding:10px;margin-bottom:6px;flex-shrink:0}
+.purple-time{font-size:2rem;font-weight:900;font-family:var(--mono);color:#c084fc;line-height:1}
+.purple-sub{font-size:.65rem;color:var(--muted);margin-top:2px}
+.purple-save{font-size:.85rem;font-weight:700;color:#a855f7;margin-top:4px}
+.sector-strip{display:flex;flex:1;gap:1px;min-height:0;overflow:hidden;margin-top:6px;border-radius:4px;overflow:hidden}
+.sector-seg{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;font-family:var(--mono)}
 
 /* Controls row */
 .ctrls{display:flex;align-items:center;gap:10px;padding:6px 14px;border-top:1px solid var(--border);flex:1}
@@ -133,18 +331,20 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
 
   <!-- TRACK MAP -->
   <div class="panel">
-    <div class="ptitle">📍 Track Map — Yas Marina</div>
+    <div class="ptitle">📍 Track Map — Yas Marina Circuit
+      <span id="corner-approach" style="margin-left:10px;font-size:.7rem;color:var(--red);font-family:var(--mono);display:none"></span>
+    </div>
     <div id="track-wrap">
-      <svg id="track-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-        <text x="200" y="205" text-anchor="middle" fill="#6b7280" font-size="13">Select a session</text>
+      <svg id="track-svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <text x="50%" y="50%" text-anchor="middle" fill="#6b7280" font-size="13">Select a session</text>
       </svg>
     </div>
   </div>
 
-  <!-- CAMERA -->
-  <div class="panel">
+  <!-- CAMERA + COACHING PANEL -->
+  <div class="panel" style="display:flex;flex-direction:column">
     <div class="ptitle">📷 Onboard — Front Left</div>
-    <div id="cam-wrap">
+    <div id="cam-wrap" style="flex:1">
       <img id="cam-a" alt=""/>
       <img id="cam-b" alt=""/>
       <div class="cam-hud">
@@ -163,6 +363,37 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
             <line id="steer-line" x1="22" y1="22" x2="22" y2="5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
           </svg>
         </div>
+
+        <!-- ── CORNER WARNING (top-right) ── -->
+        <div id="corner-warn">
+          <div id="cw-text"></div>
+          <div id="cw-sub"><span id="cw-sub-text"></span><span id="cw-dot"></span></div>
+        </div>
+
+        <!-- ── SPEED COMPARISON: BEST vs YOUR (bottom-centre HUD) ── -->
+        <div id="speed-compare">
+          <div class="sc-half">
+            <span class="sc-label">BEST TRACK</span>
+            <span id="sc-best">—</span>
+          </div>
+          <div id="sc-middle">
+            <div class="sc-bar-row">
+              <div class="sc-bar" id="scb0" style="height:6px"></div>
+              <div class="sc-bar" id="scb1" style="height:10px"></div>
+              <div class="sc-bar" id="scb2" style="height:14px"></div>
+              <div class="sc-bar" id="scb3" style="height:10px"></div>
+              <div class="sc-bar" id="scb4" style="height:6px"></div>
+            </div>
+            <div id="sc-delta">—</div>
+          </div>
+          <div class="sc-half">
+            <span class="sc-label">YOUR TRACK</span>
+            <span id="sc-you">—</span>
+          </div>
+        </div>
+
+        <!-- ── BRAKE ZONE X MARKERS ── -->
+        <div id="brake-markers"></div>
       </div>
       <div id="cam-thr-bar"></div>
       <div id="cam-brk-bar"></div>
@@ -171,44 +402,87 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
         NO SIGNAL — start replay
       </div>
     </div>
+
+    <!-- ── COACHING RADIO PANEL ── -->
+    <div id="coaching-panel" class="radio-motivation">
+      <div id="radio-ticker">
+        <div id="radio-icon-cell">🏎</div>
+        <div id="radio-text-cell">
+          <div id="radio-headline">GRANDLINE RACE ENGINEER</div>
+          <div id="radio-detail">Initialising coaching system — select a session and press play.</div>
+        </div>
+      </div>
+      <span id="radio-kind-badge" style="background:rgba(96,165,250,.15);color:#60a5fa">SYSTEM</span>
+      <span id="radio-queue-dot"></span>
+    </div>
   </div>
 
-  <!-- RIGHT: LIVE STATS -->
-  <div class="panel">
-    <div class="ptitle">📊 Live Telemetry</div>
-    <div id="stats-panel">
 
-      <!-- GG DIAGRAM -->
-      <div class="stat-block">
-        <div class="stat-block-title">GG Diagram (Traction Circle)</div>
-        <canvas id="gg-canvas" width="260" height="260"></canvas>
+</div><!-- /layout -->
+
+<!-- ── DRAWER TOGGLE TAB ── -->
+<button class="drawer-tab" id="drawer-tab" onclick="toggleDrawer()">📊 Telemetry</button>
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+
+<!-- ── LEFT DRAWER: LIVE TELEMETRY ── -->
+<div class="ldrawer" id="ldrawer">
+  <div style="font-size:.6rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:4px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:2px">
+    📊 Live Telemetry
+    <button onclick="toggleDrawer()" style="float:right;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1">✕</button>
+  </div>
+
+  <!-- GG DIAGRAM -->
+  <div class="stat-block">
+    <div class="stat-block-title">GG Diagram (Traction Circle)</div>
+    <canvas id="gg-canvas" width="260" height="260"></canvas>
+  </div>
+
+  <!-- TYRE TEMPS -->
+  <div class="stat-block">
+    <div class="stat-block-title">Tyre Surface Temperature (°C)</div>
+    <div class="tyre-grid">
+      <div class="tyre-cell cold" id="t-fl"><div class="tyre-pos">FL</div><div class="tyre-temp" id="tv-fl">—</div></div>
+      <div class="tyre-cell cold" id="t-fr"><div class="tyre-pos">FR</div><div class="tyre-temp" id="tv-fr">—</div></div>
+      <div class="tyre-cell cold" id="t-rl"><div class="tyre-pos">RL</div><div class="tyre-temp" id="tv-rl">—</div></div>
+      <div class="tyre-cell cold" id="t-rr"><div class="tyre-pos">RR</div><div class="tyre-temp" id="tv-rr">—</div></div>
+    </div>
+  </div>
+
+  <!-- SESSION STATS -->
+  <div class="stat-block">
+    <div class="stat-block-title">Session Stats</div>
+    <div class="mini-stats">
+      <div class="mini-stat"><div class="mini-stat-label">Max Speed</div><div class="mini-stat-val" id="ms-maxspd" style="color:var(--blue)">—</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Slip Angle</div><div class="mini-stat-val" id="ms-slip" style="color:var(--yellow)">—°</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Max Lat G</div><div class="mini-stat-val" id="ms-latg" style="color:var(--red)">—</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Lap Dist</div><div class="mini-stat-val" id="ms-dist" style="color:var(--muted)">—m</div></div>
+    </div>
+  </div>
+
+  <!-- RACE FLAGS + CAR SYSTEMS -->
+  <div class="stat-block" id="sys-block">
+    <div class="stat-block-title">Race Control &amp; Car Systems</div>
+    <div id="flag-strip" style="border-radius:5px;padding:5px 10px;text-align:center;font-size:.75rem;font-weight:800;letter-spacing:2px;margin-bottom:6px;background:#1e1e2e;color:#6b7280">NO FLAG</div>
+    <div class="mini-stats" style="margin-bottom:4px">
+      <div class="mini-stat"><div class="mini-stat-label">Oil Temp</div><div class="mini-stat-val" id="oil-temp" style="color:var(--yellow)">—°C</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Water Temp</div><div class="mini-stat-val" id="water-temp" style="color:var(--blue)">—°C</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Fuel Left</div><div class="mini-stat-val" id="fuel-l" style="color:var(--green)">—L</div></div>
+      <div class="mini-stat"><div class="mini-stat-label">Wheel Slip</div><div class="mini-stat-val" id="wheel-slip" style="color:var(--red)">—%</div></div>
+    </div>
+    <div class="stat-block-title" style="margin-top:4px">AI Computer Health</div>
+    <div style="display:flex;gap:4px;margin-top:4px">
+      <div style="flex:1">
+        <div style="font-size:.55rem;color:var(--muted);margin-bottom:2px">CPU <span id="cpu-pct">0</span>% · <span id="cpu-temp">—</span>°C</div>
+        <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden"><div id="cpu-bar" style="height:100%;background:#60a5fa;border-radius:3px;width:0%;transition:width .3s"></div></div>
       </div>
-
-      <!-- TYRE TEMPS -->
-      <div class="stat-block">
-        <div class="stat-block-title">Tyre Surface Temperature (°C)</div>
-        <div class="tyre-grid">
-          <div class="tyre-cell cold" id="t-fl"><div class="tyre-pos">FL</div><div class="tyre-temp" id="tv-fl">—</div></div>
-          <div class="tyre-cell cold" id="t-fr"><div class="tyre-pos">FR</div><div class="tyre-temp" id="tv-fr">—</div></div>
-          <div class="tyre-cell cold" id="t-rl"><div class="tyre-pos">RL</div><div class="tyre-temp" id="tv-rl">—</div></div>
-          <div class="tyre-cell cold" id="t-rr"><div class="tyre-pos">RR</div><div class="tyre-temp" id="tv-rr">—</div></div>
-        </div>
-      </div>
-
-      <!-- MINI STATS -->
-      <div class="stat-block">
-        <div class="stat-block-title">Session Stats</div>
-        <div class="mini-stats">
-          <div class="mini-stat"><div class="mini-stat-label">Max Speed</div><div class="mini-stat-val" id="ms-maxspd" style="color:var(--blue)">—</div></div>
-          <div class="mini-stat"><div class="mini-stat-label">Slip Angle</div><div class="mini-stat-val" id="ms-slip" style="color:var(--yellow)">—°</div></div>
-          <div class="mini-stat"><div class="mini-stat-label">Max Lat G</div><div class="mini-stat-val" id="ms-latg" style="color:var(--red)">—</div></div>
-          <div class="mini-stat"><div class="mini-stat-label">Lap Dist</div><div class="mini-stat-val" id="ms-dist" style="color:var(--muted)">—m</div></div>
-        </div>
+      <div style="flex:1">
+        <div style="font-size:.55rem;color:var(--muted);margin-bottom:2px">GPU <span id="gpu-pct">0</span>% · <span id="gpu-temp">—</span>°C</div>
+        <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden"><div id="gpu-bar" style="height:100%;background:#a855f7;border-radius:3px;width:0%;transition:width .3s"></div></div>
       </div>
     </div>
   </div>
 
-</div><!-- /layout -->
+</div><!-- /ldrawer -->
 
 <!-- BOTTOM -->
 <div class="bottom">
@@ -254,6 +528,45 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
     </div>
   </div>
 
+  <!-- SYSTEMS ROW: engine / AI health / flags -->
+  <div class="sys-row" id="sys-row">
+    <div class="scell" style="min-width:90px">
+      <span id="flag-badge">NO FLAG</span>
+    </div>
+    <div class="scell" style="flex:1">
+      <span class="scell-label">OIL</span>
+      <span class="scell-val" id="sys-oil" style="color:var(--yellow)">—°C</span>
+    </div>
+    <div class="scell" style="flex:1">
+      <span class="scell-label">H₂O</span>
+      <span class="scell-val" id="sys-water" style="color:var(--blue)">—°C</span>
+    </div>
+    <div class="scell" style="flex:1">
+      <span class="scell-label">FUEL</span>
+      <span class="scell-val" id="sys-fuel" style="color:var(--green)">—L</span>
+    </div>
+    <div class="scell" style="flex:1">
+      <span class="scell-label">SLIP</span>
+      <span class="scell-val" id="sys-slip" style="color:var(--red)">—%</span>
+    </div>
+    <div class="scell" style="flex:2;gap:6px">
+      <span class="scell-label">CPU</span>
+      <div class="sbar"><div class="sbar-fill" id="sys-cpu-bar" style="width:0%;background:#60a5fa"></div></div>
+      <span class="scell-val" id="sys-cpu-pct" style="color:#60a5fa">0%</span>
+      <span class="scell-val" id="sys-cpu-t" style="color:var(--muted);font-size:.55rem">—°C</span>
+    </div>
+    <div class="scell" style="flex:2;gap:6px">
+      <span class="scell-label">GPU</span>
+      <div class="sbar"><div class="sbar-fill" id="sys-gpu-bar" style="width:0%;background:#a855f7"></div></div>
+      <span class="scell-val" id="sys-gpu-pct" style="color:#a855f7">0%</span>
+      <span class="scell-val" id="sys-gpu-t" style="color:var(--muted);font-size:.55rem">—°C</span>
+    </div>
+    <div class="scell" style="flex:1">
+      <span class="scell-label">STEERING</span>
+      <canvas id="mini-steer" width="60" height="24" style="display:block"></canvas>
+    </div>
+  </div>
+
   <!-- CONTROLS ROW -->
   <div class="ctrls">
     <div class="lap-timer" id="lap-timer">0:00.000</div>
@@ -271,6 +584,53 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
     <button class="cbtn" id="sp4" onclick="setSpeed(4)">4×</button>
   </div>
   <div id="debug-bar">frames: 0 | cam frames: 0 | session: —</div>
+</div>
+
+<!-- ── ANALYSIS ROW ──────────────────────────────────────────────────────── -->
+<div class="analysis-row" id="analysis-row" style="display:none">
+
+  <!-- ΔT CHART -->
+  <div class="ablock">
+    <div class="ablabel">
+      Δ TIME vs DISTANCE
+      <select id="dt-lap-a" title="Reference lap"></select>
+      <select id="dt-lap-b" title="Comparison lap"></select>
+      <button onclick="loadDelta()">Load ΔT</button>
+    </div>
+    <canvas id="delta-canvas"></canvas>
+  </div>
+
+  <!-- CORNER SCOREBOARD -->
+  <div class="ablock">
+    <div class="ablabel">
+      CORNER SCOREBOARD
+      <button onclick="loadCorners()">Refresh</button>
+    </div>
+    <div class="ctable">
+      <table>
+        <thead><tr>
+          <th>Corner</th><th>Apex km/h</th><th>Entry</th><th>Exit</th><th>Pk Brake</th><th>Lat G</th>
+        </tr></thead>
+        <tbody id="corner-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PURPLE LAP -->
+  <div class="ablock">
+    <div class="ablabel">
+      THEORETICAL BEST
+      <button onclick="loadPurple()">Calculate</button>
+    </div>
+    <div class="purple-card">
+      <div class="purple-time" id="pur-time">—</div>
+      <div class="purple-sub">Theoretical best lap</div>
+      <div class="purple-save" id="pur-save">vs real best: —</div>
+    </div>
+    <div class="purple-sub" style="margin-bottom:4px;font-size:.58rem;color:var(--muted);letter-spacing:1px">SECTOR CONTRIBUTIONS (colour = source lap)</div>
+    <div class="sector-strip" id="sector-strip"></div>
+  </div>
+
 </div>
 
 <script>
@@ -303,6 +663,16 @@ let miniW = 0, miniH = 0; // cached canvas dims
   }
   requestAnimationFrame(rafLoop);
 }());
+
+// ── Drawer toggle ─────────────────────────────────────────────────────────────
+function toggleDrawer() {
+  const drawer  = document.getElementById('ldrawer');
+  const tab     = document.getElementById('drawer-tab');
+  const overlay = document.getElementById('drawer-overlay');
+  const open    = drawer.classList.toggle('open');
+  tab.classList.toggle('open', open);
+  overlay.classList.toggle('open', open);
+}
 
 // ── Init ────────────────────────────────────────────────────────────────────
 async function init() {
@@ -366,8 +736,19 @@ function populateLapSelectors() {
     el.innerHTML = opts;
     el.style.display = '';
   });
+  // Populate delta-time lap selectors
+  ['dt-lap-a','dt-lap-b'].forEach((id, qi) => {
+    const el = document.getElementById(id);
+    el.innerHTML = opts;
+    if (qi === 1 && lapSummaries.length > 1) el.value = '1';
+  });
   lapDistTotal = trackData?.lap_distance_m || 0;
   currentLap = 0;
+  // Show analysis row only when we have a session
+  document.getElementById('analysis-row').style.display = 'grid';
+  // Auto-load corner scoreboard and purple lap on session select
+  loadCorners();
+  if (lapSummaries.length >= 1) loadPurple();
 }
 
 function onLap() {
@@ -381,37 +762,73 @@ function onLap() {
 // ── Track Map ────────────────────────────────────────────────────────────────
 function renderTrack() {
   const svg = document.getElementById('track-svg');
-  const allPts = [...(trackData.inner||[]), ...(trackData.outer||[])];
+  // Build bounding box from all boundary + corner points
+  const allPts = [...(trackData.inner||[]), ...(trackData.outer||[]), ...(trackData.corners||[])];
   if (!allPts.length) return;
+
   const xs = allPts.map(p=>p.x), ys = allPts.map(p=>p.y);
-  const [x0,x1,y0,y1] = [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)];
-  const W=380, H=380, PAD=20;
-  const sx=(x1-x0)||(1), sy=(y1-y0)||(1);
-  const scale = Math.max(sx/(W-PAD*2), sy/(H-PAD*2));
-  const ox = PAD + (W-PAD*2-(x1-x0)/scale)/2;
-  const oy = PAD + (H-PAD*2-(y1-y0)/scale)/2;
+  let [x0,x1,y0,y1] = [Math.min(...xs),Math.max(...xs),Math.min(...ys),Math.max(...ys)];
+  const PAD = 28;
+  const rangeX = (x1-x0) || 1;
+  const rangeY = (y1-y0) || 1;
 
-  svgXform = (x,y) => [ox+(x-x0)/scale, H-oy-(y-y0)/scale];
-  const toPath = pts => pts.map((p,i)=>{const[sx,sy]=svgXform(p.x,p.y);return`${i?'L':'M'}${sx.toFixed(1)},${sy.toFixed(1)}`}).join(' ');
+  // Use native aspect ratio — SVG width/height match actual track shape
+  // Add padding proportionally on each side
+  const px = rangeX * 0.06, py = rangeY * 0.06; // 6% padding
+  const vx0 = x0 - px, vx1 = x1 + px;
+  const vy0 = y0 - py, vy1 = y1 + py;
+  const vW = Math.ceil(vx1 - vx0);
+  const vH = Math.ceil(vy1 - vy0);
 
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  // SVG coordinate transform: world → SVG (Y-flip because SVG Y is down)
+  svgXform = (wx, wy) => [wx - vx0, vH - (wy - vy0)];
+
+  const toPath = pts => pts.map((p,i)=>{
+    const[sx,sy]=svgXform(p.x,p.y);
+    return`${i?'L':'M'}${sx.toFixed(1)},${sy.toFixed(1)}`;
+  }).join(' ');
+
+  svg.setAttribute('viewBox', `0 0 ${vW} ${vH}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+
+  // Build inner track fill from outer minus inner (donut shape via even-odd fill)
+  const outerPath = toPath(trackData.outer) + ' Z';
+  const innerPath = toPath(trackData.inner) + ' Z';
+
   svg.innerHTML = `
     <defs>
-      <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="sglow"><feGaussianBlur stdDeviation="2"/></filter>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="6" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
     </defs>
-    <path d="${toPath(trackData.outer)} Z" fill="#111120" stroke="#222233" stroke-width="1.5"/>
-    <path d="${toPath(trackData.inner)} Z" fill="#0a0a0f" stroke="#222233" stroke-width="1"/>
-    <path d="${toPath(trackData.centerline)}" fill="none" stroke="#1a1a2e" stroke-width="1" stroke-dasharray="3,6" opacity=".5"/>
+    <!-- Track surface (between inner & outer) -->
+    <path d="${outerPath} ${innerPath}" fill="#1a1a2e" fill-rule="evenodd" stroke="none"/>
+    <!-- Outer kerb line -->
+    <path d="${outerPath}" fill="none" stroke="#2a2a40" stroke-width="2"/>
+    <!-- Inner kerb line -->
+    <path d="${innerPath}" fill="none" stroke="#2a2a40" stroke-width="1.5"/>
+    <!-- Centerline (racing line guide) -->
+    <path d="${toPath(trackData.centerline)}" fill="none" stroke="#00b4d8" stroke-width="1" stroke-dasharray="4,8" opacity=".25"/>
+    <!-- Path layer for lap path overlay -->
     <g id="path-layer"></g>
+    <!-- Corner markers -->
     ${(trackData.corners||[]).map(c=>{
       const[cx,cy]=svgXform(c.x,c.y);
-      return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="#e63946" opacity=".6"/>
-              <text class="corner-label" x="${(cx+5).toFixed(1)}" y="${(cy+3).toFixed(1)}">${c.id}</text>`;
+      const lw = c.id.length * 7 + 8;
+      const lx = cx + 7, ly = cy - 7;
+      return `
+        <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="#e63946" stroke="#fff" stroke-width="1" opacity=".9"/>
+        <rect x="${lx.toFixed(1)}" y="${(ly-9).toFixed(1)}" width="${lw}" height="13" rx="3" fill="#0a0a0f" opacity=".92"/>
+        <text x="${(lx+4).toFixed(1)}" y="${(ly+1).toFixed(1)}" class="corner-label">${c.id}</text>`;
     }).join('')}
-    <circle id="car-glow" cx="-50" cy="-50" r="12" fill="#e63946" opacity=".25" filter="url(#glow)"/>
-    <circle id="car-dot" cx="-50" cy="-50" r="6" fill="#e63946"/>
-    <polyline id="trail" points="" fill="none" stroke="#e63946" stroke-width="2.5" opacity=".5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Car glow + dot -->
+    <circle id="car-glow" cx="-999" cy="-999" r="14" fill="#e63946" opacity=".3" filter="url(#glow)"/>
+    <circle id="car-dot"  cx="-999" cy="-999" r="7"  fill="#e63946" stroke="#fff" stroke-width="1.5"/>
+    <!-- Motion trail -->
+    <polyline id="trail" points="" fill="none" stroke="#e63946" stroke-width="3" opacity=".6" stroke-linecap="round" stroke-linejoin="round"/>
   `;
 }
 
@@ -468,6 +885,7 @@ function showCamera(jpeg_b64) {
   document.getElementById('cam-speed-hud').style.display = 'block';
   document.getElementById('cam-gear-hud').style.display = 'block';
   document.getElementById('steer-wrap').style.display = 'block';
+  document.getElementById('speed-compare').style.display = 'flex';
 }
 
 function updateSteer(rad) {
@@ -623,7 +1041,7 @@ function startStream() {
     carPrev = carNext || {x: f.x, y: f.y};
     carNext = {x: f.x, y: f.y};
     carRecvAt = performance.now();
-    carIntervalMs = (1000 / 10) / speedFactor; // adapt to current speed factor
+    carIntervalMs = (1000 / 100) / speedFactor; // 100 Hz stream → 10ms intervals
 
     ggHistory.push({lat:f.lat_acc, lon:f.lon_acc, spd:f.speed});
     if (ggHistory.length > 2000) ggHistory.shift();
@@ -642,6 +1060,8 @@ function startStream() {
     drawMiniChart();
     updateDebug();
     updateTyres(f);
+    updateSystems(f);
+    updateSpeedCompare(f);
   });
 
   es.addEventListener('camera_frame', e => {
@@ -651,11 +1071,26 @@ function startStream() {
     updateDebug();
   });
 
+  es.addEventListener('coach_tip', e => {
+    const ev = JSON.parse(e.data);
+    handleCoachEvent(ev);
+  });
+
   es.addEventListener('lap_end', e => {
     const s = JSON.parse(e.data);
     document.getElementById('play-btn').textContent = '▶ Replay';
     isPlaying = false;
     es.close(); es = null;
+    // Show lap-end message
+    handleCoachEvent({
+      kind: 'motivation',
+      headline: 'LAP COMPLETE',
+      detail: `Lap time ${fmtTime(s.lap_time_s)} · ${Math.round(s.max_speed_kph)} km/h top speed · Max lat-G ${(s.max_lat_acc||0).toFixed(1)}`,
+      icon: '🏁',
+      delta_s: null,
+    });
+    // Hide speed compare
+    document.getElementById('speed-compare').style.display = 'none';
   });
 
   es.onerror = () => {
@@ -722,9 +1157,139 @@ function updateDebug() {
     `frames: ${frameCount} | cam: ${camCount} | session: ${currentSession||'—'} | lag: ${speedFactor}×`;
 }
 
+// ── Race systems & flag ───────────────────────────────────────────────────────
+const FLAG_STYLES = {
+  0: {bg:'#1e1e2e', color:'#6b7280', label:'NO FLAG'},
+  1: {bg:'#14532d', color:'#4ade80', label:'🟢 GREEN FLAG'},
+  2: {bg:'#713f12', color:'#fbbf24', label:'🟡 YELLOW FLAG'},
+  3: {bg:'#7f1d1d', color:'#f87171', label:'🔴 RED FLAG'},
+  4: {bg:'#1e1b4b', color:'#a5b4fc', label:'🏁 CHEQUERED'},
+  5: {bg:'#1e1e2e', color:'#f0f0f5', label:'⬜ WHITE FLAG'},
+};
+
+function updateSystems(f) {
+  // ── Race flag ──
+  const fs = FLAG_STYLES[f.car_flag] || FLAG_STYLES[0];
+
+  // Drawer strip (left panel)
+  const strip = document.getElementById('flag-strip');
+  if (strip) { strip.style.background = fs.bg; strip.style.color = fs.color; strip.textContent = fs.label; }
+
+  // Sys-row badge
+  const badge = document.getElementById('flag-badge');
+  if (badge) { badge.style.background = fs.bg; badge.style.color = fs.color; badge.textContent = fs.label; }
+
+  // ── Engine temps ──
+  if (f.oil_temp != null) {
+    const v = f.oil_temp.toFixed(0)+'°C';
+    const el = document.getElementById('oil-temp'); if (el) el.textContent = v;
+    const el2 = document.getElementById('sys-oil'); if (el2) { el2.textContent = v; el2.style.color = f.oil_temp > 120 ? 'var(--red)' : 'var(--yellow)'; }
+  }
+  if (f.water_temp != null) {
+    const v = f.water_temp.toFixed(0)+'°C';
+    const el = document.getElementById('water-temp'); if (el) el.textContent = v;
+    const el2 = document.getElementById('sys-water'); if (el2) { el2.textContent = v; el2.style.color = f.water_temp > 100 ? 'var(--red)' : 'var(--blue)'; }
+  }
+  if (f.fuel_l != null) {
+    const v = f.fuel_l.toFixed(1)+'L';
+    const el = document.getElementById('fuel-l'); if (el) el.textContent = v;
+    const el2 = document.getElementById('sys-fuel'); if (el2) { el2.textContent = v; el2.style.color = f.fuel_l < 5 ? 'var(--red)' : 'var(--green)'; }
+  }
+
+  // ── Wheel slip ──
+  const slipPct = Math.round((f.wheel_slip||0)*100);
+  const slipColor = slipPct > 15 ? 'var(--red)' : slipPct > 5 ? 'var(--yellow)' : 'var(--green)';
+  const slipEl = document.getElementById('wheel-slip'); if (slipEl) { slipEl.textContent = slipPct+'%'; slipEl.style.color = slipColor; }
+  const slipEl2 = document.getElementById('sys-slip'); if (slipEl2) { slipEl2.textContent = slipPct+'%'; slipEl2.style.color = slipColor; }
+
+  // ── AI computer ──
+  const cpu = Math.round(f.cpu_usage||0), gpu = Math.round(f.gpu_usage||0);
+  const cpuColor = cpu>85 ? '#ef4444' : cpu>60 ? '#f59e0b' : '#60a5fa';
+  const gpuColor = gpu>85 ? '#ef4444' : gpu>60 ? '#f59e0b' : '#a855f7';
+
+  // Drawer
+  const cpuPct = document.getElementById('cpu-pct'); if (cpuPct) cpuPct.textContent = cpu;
+  const cpuTemp = document.getElementById('cpu-temp'); if (cpuTemp) cpuTemp.textContent = f.cpu_temp ? f.cpu_temp.toFixed(0) : '—';
+  const gpuPct = document.getElementById('gpu-pct'); if (gpuPct) gpuPct.textContent = gpu;
+  const gpuTemp = document.getElementById('gpu-temp'); if (gpuTemp) gpuTemp.textContent = f.gpu_temp ? f.gpu_temp.toFixed(0) : '—';
+  const cpuBar = document.getElementById('cpu-bar'); if (cpuBar) { cpuBar.style.width = cpu+'%'; cpuBar.style.background = cpuColor; }
+  const gpuBar = document.getElementById('gpu-bar'); if (gpuBar) { gpuBar.style.width = gpu+'%'; gpuBar.style.background = gpuColor; }
+
+  // Sys-row
+  const sCpuBar = document.getElementById('sys-cpu-bar'); if (sCpuBar) { sCpuBar.style.width = cpu+'%'; sCpuBar.style.background = cpuColor; }
+  const sCpuPct = document.getElementById('sys-cpu-pct'); if (sCpuPct) { sCpuPct.textContent = cpu+'%'; sCpuPct.style.color = cpuColor; }
+  const sCpuT   = document.getElementById('sys-cpu-t');   if (sCpuT)   sCpuT.textContent = f.cpu_temp ? f.cpu_temp.toFixed(0)+'°C' : '—°C';
+  const sGpuBar = document.getElementById('sys-gpu-bar'); if (sGpuBar) { sGpuBar.style.width = gpu+'%'; sGpuBar.style.background = gpuColor; }
+  const sGpuPct = document.getElementById('sys-gpu-pct'); if (sGpuPct) { sGpuPct.textContent = gpu+'%'; sGpuPct.style.color = gpuColor; }
+  const sGpuT   = document.getElementById('sys-gpu-t');   if (sGpuT)   sGpuT.textContent = f.gpu_temp ? f.gpu_temp.toFixed(0)+'°C' : '—°C';
+
+  // ── Mini steering wheel ──
+  drawMiniSteer(f.steering||0);
+
+  // ── Corner approach indicator ──
+  updateCornerApproach(f.distance_m||0);
+}
+
+function drawMiniSteer(rad) {
+  const canvas = document.getElementById('mini-steer');
+  if (!canvas) return;
+  const W = canvas.width, H = canvas.height;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  const cx = W/2, cy = H/2, r = Math.min(cx, cy) - 2;
+  const deg = rad * 180 / Math.PI;
+  const angle = Math.max(-270, Math.min(270, deg));
+  // Wheel rim
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Spoke (indicator line from center)
+  const a = (angle - 90) * Math.PI / 180;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(a)*r*0.85, cy + Math.sin(a)*r*0.85);
+  ctx.strokeStyle = Math.abs(angle) > 90 ? '#f87171' : Math.abs(angle) > 30 ? '#fbbf24' : '#60a5fa';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2, 0, Math.PI*2);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fill();
+}
+
+function updateCornerApproach(distM) {
+  const el = document.getElementById('corner-approach');
+  if (!el || !trackData || !trackData.corners || !trackData.corners.length) {
+    if (el) el.style.display = 'none';
+    return;
+  }
+  // Find next corner ahead (by distance_m if available)
+  const corners = trackData.corners;
+  if (!corners[0] || corners[0].distance_m == null) { el.style.display = 'none'; return; }
+  // Find the corner with smallest positive gap from current distance (modulo track length)
+  const trackLen = lapDistTotal || 5800;
+  let best = null, bestDelta = Infinity;
+  for (const c of corners) {
+    let delta = c.distance_m - distM;
+    if (delta < 0) delta += trackLen;  // wrap
+    if (delta < bestDelta) { bestDelta = delta; best = c; }
+  }
+  if (best && bestDelta < 600) {
+    el.textContent = `${best.id} in ${Math.round(bestDelta)}m`;
+    el.style.display = 'inline';
+    el.style.color = bestDelta < 100 ? 'var(--red)' : bestDelta < 250 ? 'var(--yellow)' : 'var(--muted)';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmtTime(s) {
-  if (s == null) return '—';
+  if (s == null || s <= 0) return '—';
   const m = Math.floor(s/60);
   const sec = (s%60).toFixed(3).padStart(6,'0');
   return `${m}:${sec}`;
@@ -732,6 +1297,310 @@ function fmtTime(s) {
 
 // Default 1× active
 document.getElementById('sp1').classList.add('act');
+
+// ── Speed Compare HUD ────────────────────────────────────────────────────────
+function updateSpeedCompare(f) {
+  const you  = Math.round(f.speed || 0);
+  const best = (f.ref_speed != null) ? Math.round(f.ref_speed) : null;
+
+  document.getElementById('sc-you').textContent = you;
+
+  if (best !== null && best > 0) {
+    document.getElementById('sc-best').textContent = best;
+    const delta = you - best;   // positive = carrying more speed than best lap
+    const dEl = document.getElementById('sc-delta');
+
+    if (Math.abs(delta) < 2) {
+      dEl.textContent = '▶ MATCHED';
+      dEl.style.color = '#94a3b8';
+    } else if (delta > 0) {
+      dEl.textContent = `+${delta}`;
+      dEl.style.color = '#fbbf24';
+    } else {
+      dEl.textContent = `${delta}`;
+      dEl.style.color = '#f87171';
+    }
+    // Colour YOUR value based on performance
+    document.getElementById('sc-you').style.color =
+      delta > 4 ? '#fbbf24' : delta < -4 ? '#f87171' : '#60a5fa';
+
+    // Animate the 5 middle bars like an EQ — proportional to speed
+    const spd = you / 250;  // 0–1 normalised to ~250 km/h max
+    const heights = [
+      Math.max(3, Math.round(spd * 8)),
+      Math.max(4, Math.round(spd * 14)),
+      Math.max(5, Math.round(spd * 16)),
+      Math.max(4, Math.round(spd * 14)),
+      Math.max(3, Math.round(spd * 8)),
+    ];
+    const barColor = delta > 4 ? '#fbbf24' : delta < -4 ? '#f87171' : 'rgba(255,255,255,.4)';
+    for (let i = 0; i < 5; i++) {
+      const b = document.getElementById('scb'+i);
+      if (b) { b.style.height = heights[i]+'px'; b.style.background = barColor; }
+    }
+  } else {
+    document.getElementById('sc-best').textContent = '—';
+    document.getElementById('sc-delta').textContent = 'NO REF';
+  }
+}
+
+// ── Corner Warning HUD ───────────────────────────────────────────────────────
+let _cwTimeout = null;
+function showCornerWarn(headline, sub, urgency) {
+  const wrap    = document.getElementById('corner-warn');
+  const cwText  = document.getElementById('cw-text');
+  const cwSub   = document.getElementById('cw-sub');
+  const cwDot   = document.getElementById('cw-dot');
+  const cwSubTx = document.getElementById('cw-sub-text');
+  if (!wrap || !cwText) return;
+
+  cwText.textContent = headline;
+  if (cwSubTx) cwSubTx.textContent = sub;
+
+  const col = urgency === 'high' ? '#ef4444' : urgency === 'medium' ? '#fbbf24' : '#60a5fa';
+  if (cwSub)  cwSub.style.color  = col;
+  if (cwDot)  cwDot.style.background = col;
+
+  wrap.style.display = 'block';
+  if (_cwTimeout) clearTimeout(_cwTimeout);
+  _cwTimeout = setTimeout(() => { wrap.style.display = 'none'; }, 4800);
+}
+
+// ── Brake Zone X Markers ─────────────────────────────────────────────────────
+function spawnBrakeMarkers(count) {
+  const container = document.getElementById('brake-markers');
+  if (!container) return;
+  container.innerHTML = '';
+  const n = Math.min(count, 5);
+  if (n === 0) return;
+  // Spread markers across right 40% of the frame at different depths/sizes
+  // to simulate distance markers receding into the track
+  const xPositions = [58, 62, 67, 73, 80];  // % from left
+  const yPositions = [28, 33, 38, 43, 48];  // % from top
+  const sizes = [0.7, 0.85, 1.0, 1.1, 1.2]; // scale with "distance"
+  for (let i = 0; i < n; i++) {
+    const x = document.createElement('span');
+    x.className = 'brk-x';
+    x.textContent = '✕';
+    x.style.left  = xPositions[i] + '%';
+    x.style.top   = yPositions[i] + '%';
+    x.style.fontSize = (1.1 * sizes[i]) + 'rem';
+    x.style.animationDelay = (i * 0.12) + 's';
+    container.appendChild(x);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 2800);
+}
+
+// ── Coaching Radio Panel ─────────────────────────────────────────────────────
+const _radioQueue = [];
+let   _radioPlaying = false;
+let   _radioTimer   = null;
+
+const _kindConfig = {
+  feedback:       { badge:'FEEDBACK',       badgeBg:'rgba(96,165,250,.15)',  badgeCol:'#60a5fa',  cls:'radio-feedback'       },
+  recommendation: { badge:'RECOMMENDATION', badgeBg:'rgba(251,191,36,.15)',  badgeCol:'#fbbf24',  cls:'radio-recommendation' },
+  motivation:     { badge:'MOTIVATION',     badgeBg:'rgba(74,222,128,.15)',   badgeCol:'#4ade80',  cls:'radio-motivation'     },
+};
+
+function handleCoachEvent(ev) {
+  // Deduplicate: don't queue same headline twice in a row
+  if (_radioQueue.length > 0 && _radioQueue[_radioQueue.length-1].headline === ev.headline) return;
+  _radioQueue.push(ev);
+  // Show queue count
+  const qdot = document.getElementById('radio-queue-dot');
+  if (qdot) qdot.textContent = _radioQueue.length > 1 ? `+${_radioQueue.length-1} queued` : '';
+  if (!_radioPlaying) _playNextCoachEvent();
+
+  // Trigger visual HUD cues for recommendations
+  if (ev.kind === 'recommendation') {
+    const text = ev.headline || '';
+    const urgency = text.includes('BRAKE EARLIER') ? 'high' : text.includes('PUSH') ? 'medium' : 'low';
+    const sub     = text.includes('BRAKE EARLIER') ? 'Slow down ⬇' : text.includes('PUSH') ? 'Attack ⬆' : 'On pace';
+    showCornerWarn(ev.headline, sub, urgency);
+    spawnBrakeMarkers(urgency === 'high' ? 4 : urgency === 'medium' ? 2 : 0);
+  }
+  // Motivation: flash corner-approach with delta
+  if (ev.kind === 'motivation' && ev.delta_s != null) {
+    const ca = document.getElementById('corner-approach');
+    if (ca) {
+      ca.textContent = ev.headline;
+      ca.style.display = 'inline';
+      ca.style.color = ev.delta_s < 0 ? 'var(--green)' : ev.delta_s < 0.3 ? 'var(--yellow)' : 'var(--red)';
+      setTimeout(() => { ca.style.display = 'none'; }, 3000);
+    }
+  }
+}
+
+function _playNextCoachEvent() {
+  if (_radioQueue.length === 0) { _radioPlaying = false; return; }
+  _radioPlaying = true;
+
+  const ev = _radioQueue.shift();
+  const cfg = _kindConfig[ev.kind] || _kindConfig.motivation;
+
+  const panel     = document.getElementById('coaching-panel');
+  const iconCell  = document.getElementById('radio-icon-cell');
+  const headline  = document.getElementById('radio-headline');
+  const detail    = document.getElementById('radio-detail');
+  const badge     = document.getElementById('radio-kind-badge');
+  const qdot      = document.getElementById('radio-queue-dot');
+
+  // Update kind styling
+  panel.className = 'radio-slide ' + cfg.cls;
+  badge.textContent = cfg.badge;
+  badge.style.background = cfg.badgeBg;
+  badge.style.color      = cfg.badgeCol;
+
+  // Icon cell background flicker
+  iconCell.textContent = ev.icon || '🎙';
+  iconCell.style.background = cfg.badgeBg;
+  setTimeout(() => { iconCell.style.background = 'var(--bg)'; }, 600);
+
+  headline.textContent = ev.headline || '';
+  detail.textContent   = ev.detail   || '';
+  qdot.textContent     = _radioQueue.length > 0 ? `+${_radioQueue.length} queued` : '';
+
+  // Duration: ~4s base + 1s per 20 chars of detail
+  const dur = 4000 + Math.min(4000, (ev.detail||'').length * 50);
+  _radioTimer = setTimeout(_playNextCoachEvent, dur);
+}
+
+// ── Delta time chart ──────────────────────────────────────────────────────────
+let deltaData = null;
+
+async function loadDelta() {
+  if (!currentSession) return;
+  const a = document.getElementById('dt-lap-a').value;
+  const b = document.getElementById('dt-lap-b').value;
+  try {
+    const r = await fetch(`${API}/analysis/${currentSession}/delta?lap_a=${a}&lap_b=${b}&n_points=400`);
+    deltaData = await r.json();
+    drawDelta();
+  } catch(e) { console.error('loadDelta:', e); }
+}
+
+function drawDelta() {
+  const canvas = document.getElementById('delta-canvas');
+  const W = canvas.offsetWidth; const H = canvas.offsetHeight;
+  if (!W || !H || !deltaData) return;
+  canvas.width = W * devicePixelRatio; canvas.height = H * devicePixelRatio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const pts = deltaData.delta_t;
+  const dist = deltaData.distance_grid;
+  const maxD = dist[dist.length-1];
+  const minT = Math.min(...pts), maxT = Math.max(...pts);
+  const range = Math.max(Math.abs(minT), Math.abs(maxT), 0.05);
+  const PAD = {t:10, b:18, l:30, r:8};
+  const cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
+
+  const px = (d) => PAD.l + (d / maxD) * cw;
+  const py = (t) => PAD.t + ch/2 - (t / range) * (ch/2);
+  const zeroY = PAD.t + ch/2;
+
+  // Background
+  ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0,0,W,H);
+
+  // Zero line
+  ctx.strokeStyle = '#2a2a3e'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.l, zeroY); ctx.lineTo(W-PAD.r, zeroY); ctx.stroke();
+
+  // Fill under curve (red=faster, green=slower reference perspective)
+  ctx.beginPath();
+  ctx.moveTo(px(dist[0]), zeroY);
+  pts.forEach((t,i) => ctx.lineTo(px(dist[i]), py(t)));
+  ctx.lineTo(px(dist[pts.length-1]), zeroY);
+  ctx.closePath();
+  // green fill where delta<0 (lap B faster), red where >0
+  const grad = ctx.createLinearGradient(0, PAD.t, 0, H-PAD.b);
+  grad.addColorStop(0, 'rgba(230,57,70,.4)');
+  grad.addColorStop(0.5, 'rgba(230,57,70,.0)');
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Draw green above-zero fill (lap B ahead)
+  ctx.beginPath();
+  ctx.moveTo(px(dist[0]), zeroY);
+  pts.forEach((t,i) => ctx.lineTo(px(dist[i]), py(t)));
+  ctx.lineTo(px(dist[pts.length-1]), zeroY); ctx.closePath();
+  const grad2 = ctx.createLinearGradient(0, H-PAD.b, 0, PAD.t);
+  grad2.addColorStop(0, 'rgba(46,204,113,.4)');
+  grad2.addColorStop(0.5, 'rgba(46,204,113,.0)');
+  ctx.fillStyle = grad2; ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  pts.forEach((t,i) => i===0 ? ctx.moveTo(px(dist[i]),py(t)) : ctx.lineTo(px(dist[i]),py(t)));
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#6b7280'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(`+${maxT.toFixed(2)}s`, 2, PAD.t+9);
+  ctx.fillText(`${minT.toFixed(2)}s`, 2, H-PAD.b-4);
+  ctx.textAlign = 'center';
+  const tDelta = deltaData.total_delta_s;
+  const sign = tDelta > 0 ? '+' : '';
+  ctx.fillStyle = tDelta > 0 ? '#e63946' : '#2ecc71';
+  ctx.font = 'bold 10px monospace';
+  ctx.fillText(`Total: ${sign}${tDelta.toFixed(3)}s`, W/2, 11);
+  // X axis: distance markers
+  ctx.fillStyle = '#4b5563'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  [0.25, 0.5, 0.75, 1.0].forEach(f => {
+    const xp = px(maxD * f);
+    ctx.fillText(`${Math.round(maxD*f)}m`, xp, H-2);
+    ctx.strokeStyle = '#1a1a2a'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xp, PAD.t); ctx.lineTo(xp, H-PAD.b); ctx.stroke();
+  });
+}
+
+// ── Corner scoreboard ─────────────────────────────────────────────────────────
+async function loadCorners() {
+  if (!currentSession) return;
+  try {
+    const r = await fetch(`${API}/analysis/${currentSession}/corner_scoreboard`);
+    const data = await r.json();
+    const tbody = document.getElementById('corner-tbody');
+    tbody.innerHTML = data.rows.map(row => {
+      const spd = row.min_speed;
+      const color = spd > 200 ? '#2ecc71' : spd > 150 ? '#f4a261' : spd > 100 ? '#e2e8f0' : '#e63946';
+      return `<tr>
+        <td>${row.corner_id}</td>
+        <td style="color:${color};font-weight:800">${spd.toFixed(0)}</td>
+        <td>${row.entry_speed.toFixed(0)}</td>
+        <td>${row.exit_speed.toFixed(0)}</td>
+        <td style="color:${row.peak_brake > 0.7 ? '#e63946' : '#6b7280'}">${(row.peak_brake*100).toFixed(0)}%</td>
+        <td>${row.peak_lat_g.toFixed(1)}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.error('loadCorners:', e); }
+}
+
+// ── Theoretical best (purple lap) ─────────────────────────────────────────────
+const LAP_COLORS = ['#60a5fa','#f87171','#34d399','#fbbf24','#a78bfa','#fb7185'];
+
+async function loadPurple() {
+  if (!currentSession) return;
+  try {
+    const r = await fetch(`${API}/analysis/${currentSession}/theoretical_best`);
+    const data = await r.json();
+
+    document.getElementById('pur-time').textContent = fmtTime(data.theoretical_time_s);
+    const saved = data.time_saved_s;
+    document.getElementById('pur-save').textContent =
+      `${saved > 0 ? '-' : '+'}${Math.abs(saved).toFixed(3)}s vs best real (${fmtTime(data.best_real_time_s)})`;
+    document.getElementById('pur-save').style.color = saved > 0 ? '#a855f7' : '#ef4444';
+
+    // Sector strip — each segment coloured by which lap contributed it
+    const strip = document.getElementById('sector-strip');
+    strip.innerHTML = data.sectors.map(s => {
+      const col = LAP_COLORS[s.best_lap % LAP_COLORS.length];
+      return `<div class="sector-seg" style="background:${col}22;border-left:2px solid ${col}" title="Lap ${s.best_lap+1} | ${s.sector_time_s.toFixed(3)}s"></div>`;
+    }).join('');
+  } catch(e) { console.error('loadPurple:', e); }
+}
+
+// Redraw delta on window resize
+window.addEventListener('resize', () => { if(deltaData) drawDelta(); });
 
 init();
 </script>

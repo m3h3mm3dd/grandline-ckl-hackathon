@@ -12,6 +12,7 @@ from models.schemas import (
     GGPoint, GGDiagram,
     TyreState, TyreDegradation,
     DistanceComparison,
+    DeltaTimeSeries, TheoreticalBest, MiniSectorBest,
 )
 
 # Yas Marina sector definitions — distance-based (% of lap)
@@ -64,6 +65,17 @@ def _to_schema_frame(f: RawFrame, t: float) -> TelemetryFrame:
         wheel_load_rr=round(f.wheel_load_rr, 0) if f.wheel_load_rr else None,
         brake_disc_temp_fl=round(f.brake_disc_temp_fl, 1) if f.brake_disc_temp_fl else None,
         brake_disc_temp_fr=round(f.brake_disc_temp_fr, 1) if f.brake_disc_temp_fr else None,
+        car_flag=f.car_flag,
+        track_flag=f.track_flag,
+        session_type=f.session_type,
+        oil_temp=round(f.oil_temp, 1),
+        water_temp=round(f.water_temp, 1),
+        fuel_l=round(f.fuel_l, 2) if f.fuel_l is not None else None,
+        cpu_usage=f.cpu_usage,
+        gpu_usage=f.gpu_usage,
+        cpu_temp=round(f.cpu_temp, 1),
+        gpu_temp=round(f.gpu_temp, 1),
+        wheel_slip=round(f.wheel_slip, 4),
     )
 
 
@@ -425,4 +437,155 @@ def compare_laps(
         braking_zones_b=detect_braking_zones(frames_b),
         sectors_a=compute_sectors(frames_a, lap_index_a),
         sectors_b=compute_sectors(frames_b, lap_index_b),
+    )
+
+
+# ── Delta time series ─────────────────────────────────────────────────────────
+
+def compute_delta_time(
+    frames_a: list[RawFrame],
+    frames_b: list[RawFrame],
+    lap_index_a: int,
+    lap_index_b: int,
+    n_points: int = 500,
+) -> DeltaTimeSeries:
+    """
+    Compute cumulative time delta between two laps on a shared distance axis.
+
+    Method: for each tiny distance element dd, time = dd / speed.
+    Integrate across the lap to get t(distance) for each lap, then
+    delta_t = t_b(d) - t_a(d).  Positive delta means lap B is behind
+    (slower) at that point on track — mirrors the F1 ΔT chart.
+    """
+    detail_a = compute_lap_detail(frames_a, lap_index_a)
+    detail_b = compute_lap_detail(frames_b, lap_index_b)
+
+    def _dist_speed(frames: list[RawFrame]):
+        has_dist = frames[0].distance_m is not None
+        if has_dist:
+            d = np.array([f.distance_m for f in frames])
+        else:
+            t   = np.array([f.ts for f in frames])
+            spd = np.array([f.speed / 3.6 for f in frames])
+            dt  = np.diff(t, prepend=t[0])
+            d   = np.cumsum(spd * dt)
+        spd = np.array([f.speed for f in frames])
+        return d, spd
+
+    d_a, sp_a = _dist_speed(frames_a)
+    d_b, sp_b = _dist_speed(frames_b)
+
+    max_common = min(d_a.max(), d_b.max())
+    grid = np.linspace(0.0, max_common, n_points)
+    dd   = np.diff(grid, prepend=grid[0])
+
+    def _cumtime(d, spd):
+        # Interpolate speed onto shared grid; clamp to 1 km/h minimum
+        order  = np.argsort(d)
+        v_kmh  = np.interp(grid, d[order], spd[order])
+        v_ms   = np.maximum(v_kmh / 3.6, 0.5)   # avoid /0
+        return np.cumsum(dd / v_ms)
+
+    t_a = _cumtime(d_a, sp_a)
+    t_b = _cumtime(d_b, sp_b)
+    delta = (t_b - t_a).round(3)
+
+    def _spd_on_grid(d, spd):
+        order = np.argsort(d)
+        return np.interp(grid, d[order], spd[order])
+
+    return DeltaTimeSeries(
+        lap_a=detail_a.summary,
+        lap_b=detail_b.summary,
+        total_delta_s=round(detail_b.summary.lap_time_s - detail_a.summary.lap_time_s, 3),
+        distance_grid=grid.round(1).tolist(),
+        delta_t=delta.tolist(),
+        speed_a=_spd_on_grid(d_a, sp_a).round(2).tolist(),
+        speed_b=_spd_on_grid(d_b, sp_b).round(2).tolist(),
+    )
+
+
+# ── Theoretical best lap ──────────────────────────────────────────────────────
+
+def compute_theoretical_best(
+    all_laps: list[list[RawFrame]],
+    n_sectors: int = 25,
+) -> TheoreticalBest:
+    """
+    'Purple lap' — split each lap into n_sectors mini-sectors by distance,
+    pick the fastest sector time from any lap, sum them.
+    """
+    if not all_laps:
+        raise ValueError("No laps provided")
+
+    # Build distance arrays per lap
+    def _dist_time(frames: list[RawFrame]):
+        has_dist = frames[0].distance_m is not None
+        if has_dist:
+            # distance_m is centerline position, NOT cumulative.
+            # Convert to cumulative by integrating v*dt (more reliable for sectors).
+            t_arr = np.array([f.ts for f in frames])
+            spd   = np.array([f.speed / 3.6 for f in frames])
+            dt    = np.diff(t_arr, prepend=t_arr[0])
+            d     = np.cumsum(spd * dt)
+        else:
+            t_arr = np.array([f.ts for f in frames])
+            spd   = np.array([f.speed / 3.6 for f in frames])
+            dt    = np.diff(t_arr, prepend=t_arr[0])
+            d     = np.cumsum(spd * dt)
+        t = np.array([f.ts - frames[0].ts for f in frames])
+        return d, t
+
+    dist_times = [_dist_time(lap) for lap in all_laps]
+
+    # Find lap distance range shared by all laps
+    max_common = min(d.max() for d, _ in dist_times)
+
+    # Sector boundaries on shared distance axis
+    sector_edges = np.linspace(0.0, max_common, n_sectors + 1)
+
+    best_sectors: list[MiniSectorBest] = []
+    best_time = 0.0
+
+    for s_idx in range(n_sectors):
+        d_start = sector_edges[s_idx]
+        d_end   = sector_edges[s_idx + 1]
+        best_st = None
+        best_lap_i = 0
+
+        for lap_i, (d, t) in enumerate(dist_times):
+            order = np.argsort(d)
+            d_s, t_s = d[order], t[order]
+            # Time to reach d_start and d_end by linear interpolation
+            if d_s.max() < d_end:
+                continue
+            t_in  = float(np.interp(d_start, d_s, t_s))
+            t_out = float(np.interp(d_end,   d_s, t_s))
+            st = t_out - t_in
+            if best_st is None or st < best_st:
+                best_st    = st
+                best_lap_i = lap_i
+
+        if best_st is None:
+            best_st = 0.0
+        best_time += best_st
+        best_sectors.append(MiniSectorBest(
+            sector_idx=s_idx,
+            best_lap=best_lap_i,
+            sector_time_s=round(best_st, 4),
+            d_start=round(d_start, 1),
+            d_end=round(d_end, 1),
+        ))
+
+    # Best real lap time
+    real_times = [lap[-1].ts - lap[0].ts for lap in all_laps]
+    best_real  = min(real_times)
+
+    return TheoreticalBest(
+        theoretical_time_s=round(best_time, 3),
+        best_real_time_s=round(best_real, 3),
+        time_saved_s=round(best_real - best_time, 3),
+        n_sectors=n_sectors,
+        sectors=best_sectors,
+        sector_laps=[s.best_lap for s in best_sectors],
     )

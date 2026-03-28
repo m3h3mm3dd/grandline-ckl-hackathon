@@ -10,6 +10,9 @@ GET /analysis/{session_id}/lap/{lap_index}/gg         → GG diagram data
 GET /analysis/{session_id}/lap/{lap_index}/tyres      → tyre temp trend
 GET /analysis/{session_id}/lap/{lap_index}/degradation → tyre degradation summary
 GET /analysis/{session_id}/compare                    → distance-normalised comparison
+GET /analysis/{session_id}/delta?lap_a=0&lap_b=1      → ΔT chart data
+GET /analysis/{session_id}/theoretical_best           → purple lap
+GET /analysis/{session_id}/corner_scoreboard          → all-lap corner table
 GET /analysis/{session_id}/track                      → track boundary + corner map
 """
 
@@ -25,6 +28,8 @@ from services.metrics_engine import (
     compute_tyre_degradation,
     compare_laps_distance,
     compare_laps,
+    compute_delta_time,
+    compute_theoretical_best,
 )
 from services.corner_detector import analyse_corners
 from models.schemas import (
@@ -32,6 +37,8 @@ from models.schemas import (
     GGDiagram, CornerAnalysis, LapCornerReport,
     TyreState, TyreDegradation, TrackData,
     DistanceComparison, LapComparison,
+    DeltaTimeSeries, TheoreticalBest,
+    CornerScoreboard, CornerScoreRow,
 )
 
 router = APIRouter()
@@ -284,3 +291,100 @@ def get_best_lap(session_id: str):
         raise HTTPException(404, "No laps found")
     best = min(s.lap_details, key=lambda d: d.summary.lap_time_s)
     return best.summary
+
+
+# ── Delta time chart ──────────────────────────────────────────────────────────
+
+@router.get("/{session_id}/delta", response_model=DeltaTimeSeries)
+def get_delta_time(
+    session_id: str,
+    lap_a: int = Query(..., description="Reference lap index"),
+    lap_b: int = Query(..., description="Comparison lap index"),
+    n_points: int = Query(500, ge=100, le=1000),
+):
+    """
+    Cumulative ΔT chart: time gained/lost between two laps at every metre of track.
+    Positive = lap B is behind (slower); negative = lap B is ahead (faster).
+    Mirrors the live delta chart used in real F1 & IndyCar broadcasts.
+    """
+    s = _require_session(session_id)
+    frames_a = _require_lap(s, lap_a)
+    frames_b = _require_lap(s, lap_b)
+    return compute_delta_time(frames_a, frames_b, lap_a, lap_b, n_points=n_points)
+
+
+# ── Theoretical best lap ──────────────────────────────────────────────────────
+
+@router.get("/{session_id}/theoretical_best", response_model=TheoreticalBest)
+def get_theoretical_best(
+    session_id: str,
+    n_sectors: int = Query(25, ge=5, le=100, description="Number of mini-sectors"),
+):
+    """
+    'Purple lap' — theoretical fastest lap by combining best mini-sector times
+    from across all laps in the session. Shows how much faster the car could
+    go if every sector was driven at peak performance.
+    """
+    s = _require_session(session_id)
+    if len(s.raw_laps) < 1:
+        raise HTTPException(404, "No laps available")
+    try:
+        return compute_theoretical_best(s.raw_laps, n_sectors=n_sectors)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+# ── Corner scoreboard ─────────────────────────────────────────────────────────
+
+@router.get("/{session_id}/corner_scoreboard", response_model=CornerScoreboard)
+def get_corner_scoreboard(
+    session_id: str,
+    lap_index: Optional[int] = Query(None, description="Specific lap — omit for best across all laps"),
+):
+    """
+    Corner-by-corner efficiency table. If lap_index is given, returns that lap's
+    data. Otherwise returns the best metric for each corner across all laps —
+    the 'ideal corner card' showing peak performance at every turn.
+    """
+    s = _require_session(session_id)
+    corner_map = getattr(s, "corner_map", None)
+    if corner_map is None or corner_map.centerline is None:
+        raise HTTPException(503, "Track boundary not loaded")
+
+    laps_to_analyse = (
+        [lap_index] if lap_index is not None
+        else list(range(len(s.raw_laps)))
+    )
+
+    # Gather corner analysis per lap
+    all_rows: list[CornerScoreRow] = []
+    for li in laps_to_analyse:
+        if li >= len(s.raw_laps):
+            continue
+        corners = analyse_corners(s.raw_laps[li], corner_map, li)
+        for c in corners:
+            all_rows.append(CornerScoreRow(
+                corner_id=c.corner_id,
+                distance_m=round(c.distance_m, 1),
+                direction=c.direction,
+                min_speed=round(c.min_speed_kph, 1),
+                entry_speed=round(c.entry_speed_kph, 1),
+                exit_speed=round(c.exit_speed_kph, 1),
+                peak_brake=round(c.peak_brake, 3),
+                peak_lat_g=round(c.peak_lat_g, 2),
+                lap_index=li,
+            ))
+
+    # If multi-lap: keep only the best (highest apex speed) row per corner
+    if lap_index is None and all_rows:
+        best: dict[str, CornerScoreRow] = {}
+        for row in all_rows:
+            if row.corner_id not in best or row.min_speed > best[row.corner_id].min_speed:
+                best[row.corner_id] = row
+        all_rows = sorted(best.values(), key=lambda r: r.distance_m)
+
+    return CornerScoreboard(
+        session_id=session_id,
+        laps=laps_to_analyse,
+        rows=all_rows,
+    )

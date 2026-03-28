@@ -61,6 +61,19 @@ class TelemetryFrame(BaseModel):
     brake_disc_temp_fl: Optional[float] = None
     brake_disc_temp_fr: Optional[float] = None
 
+    # ── Race control & car system state ──────────────────────────────────────
+    car_flag:    int = 0   # 0=none 1=green 2=yellow 3=red 4=checkered
+    track_flag:  int = 0   # bitmask from rc_status_01
+    session_type: int = 0  # 0=unknown 1=practice 2=qualifying 3=race
+    oil_temp:    float = 0.0   # °C (ICEStatus02)
+    water_temp:  float = 0.0   # °C (ICEStatus02)
+    fuel_l:      Optional[float] = None  # litres remaining (ICEStatus01)
+    cpu_usage:   int = 0   # % (HLMsg06 — AI computer)
+    gpu_usage:   int = 0   # %
+    cpu_temp:    float = 0.0   # °C
+    gpu_temp:    float = 0.0   # °C
+    wheel_slip:  float = 0.0   # 0–1 normalised, derived from wheel speeds
+
 
 # ── Lap ───────────────────────────────────────────────────────────────────────
 
@@ -201,6 +214,58 @@ class TrackData(BaseModel):
     centerline: list[TrackPoint]
     corners:    list[CornerMarker]
     lap_distance_m: float   # total centerline arc-length
+
+
+# ── Delta time series ─────────────────────────────────────────────────────────
+
+class DeltaTimeSeries(BaseModel):
+    """Cumulative time delta between two laps, projected on a shared distance axis."""
+    lap_a:         LapSummary
+    lap_b:         LapSummary
+    total_delta_s: float              # lap_b_time - lap_a_time (negative = B is faster)
+    distance_grid: list[float]        # metres, shared x-axis
+    delta_t:       list[float]        # seconds — positive means lap B is behind (slower)
+    speed_a:       list[float]        # kph on shared grid (reference lap)
+    speed_b:       list[float]        # kph on shared grid (comparison lap)
+
+
+# ── Theoretical best lap ──────────────────────────────────────────────────────
+
+class MiniSectorBest(BaseModel):
+    sector_idx:  int
+    best_lap:    int    # lap index that produced this best sector time
+    sector_time_s: float
+    d_start:     float
+    d_end:       float
+
+class TheoreticalBest(BaseModel):
+    """'Purple lap' — the fastest possible lap by combining best mini-sectors."""
+    theoretical_time_s: float
+    best_real_time_s:   float        # actual best lap for comparison
+    time_saved_s:       float        # how much faster than best real lap
+    n_sectors:          int
+    sectors:            list[MiniSectorBest]
+    sector_laps:        list[int]    # which lap index contributed each sector
+
+
+# ── Corner scoreboard ─────────────────────────────────────────────────────────
+
+class CornerScoreRow(BaseModel):
+    corner_id:    str
+    distance_m:   float
+    direction:    str
+    min_speed:    float   # apex speed km/h
+    entry_speed:  float
+    exit_speed:   float
+    peak_brake:   float   # 0-1
+    peak_lat_g:   float   # m/s²
+    lap_index:    int     # which lap this row is for
+
+class CornerScoreboard(BaseModel):
+    """Per-corner best metrics, optionally across all laps."""
+    session_id: str
+    laps:       list[int]
+    rows:       list[CornerScoreRow]
 
 
 # ── Distance-normalised lap comparison ───────────────────────────────────────
