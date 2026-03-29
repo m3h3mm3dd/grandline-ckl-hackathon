@@ -13,6 +13,7 @@ from models.schemas import (
     TyreState, TyreDegradation,
     DistanceComparison,
     DeltaTimeSeries, TheoreticalBest, MiniSectorBest,
+    SuspensionState, SuspensionSummary, SuspensionReport,
 )
 
 # Yas Marina sector definitions — distance-based (% of lap)
@@ -59,6 +60,8 @@ def _to_schema_frame(f: RawFrame, t: float) -> TelemetryFrame:
         ride_height_fr=round(f.ride_height_fr, 2) if f.ride_height_fr else None,
         ride_height_rl=round(f.ride_height_rl, 2) if f.ride_height_rl else None,
         ride_height_rr=round(f.ride_height_rr, 2) if f.ride_height_rr else None,
+        rh_front=round(f.rh_front, 2) if f.rh_front else None,
+        rh_rear=round(f.rh_rear, 2) if f.rh_rear else None,
         wheel_load_fl=round(f.wheel_load_fl, 0) if f.wheel_load_fl else None,
         wheel_load_fr=round(f.wheel_load_fr, 0) if f.wheel_load_fr else None,
         wheel_load_rl=round(f.wheel_load_rl, 0) if f.wheel_load_rl else None,
@@ -327,6 +330,76 @@ def compute_tyre_degradation(frames: list[RawFrame], lap_index: int) -> TyreDegr
         overheating=overheating,
         cold_start=cold_start,
     )
+
+
+# ── Suspension / Ride Height ──────────────────────────────────────────────────
+
+def compute_suspension_report(
+    frames: list[RawFrame],
+    lap_index: int,
+    sample_interval_s: float = 1.0,
+) -> SuspensionReport:
+    """
+    Downsample suspension data to ~every 1s and compute per-lap summary stats.
+
+    Signal notes:
+    - ride_height_fl/fr/rl/rr  = damper stroke per wheel (mm) from Badenia 560
+    - rh_front / rh_rear       = true centerline ride height from optical sensor (mm)
+
+    If the MCAP file contains these topics the values will be non-None;
+    otherwise the summary.has_data flag will be False.
+    """
+    trend: list[SuspensionState] = []
+    t0 = frames[0].ts if frames else 0.0
+    last_t = -999.0
+
+    for f in frames:
+        t_rel = f.ts - t0
+        if t_rel - last_t < sample_interval_s:
+            continue
+        last_t = t_rel
+
+        has = any([
+            f.ride_height_fl, f.ride_height_fr,
+            f.ride_height_rl, f.ride_height_rr,
+            f.rh_front, f.rh_rear,
+        ])
+        if not has:
+            continue
+
+        trend.append(SuspensionState(
+            t=round(t_rel, 2),
+            distance_m=round(f.distance_m, 1) if f.distance_m is not None else None,
+            damper_fl=round(f.ride_height_fl, 2) if f.ride_height_fl else None,
+            damper_fr=round(f.ride_height_fr, 2) if f.ride_height_fr else None,
+            damper_rl=round(f.ride_height_rl, 2) if f.ride_height_rl else None,
+            damper_rr=round(f.ride_height_rr, 2) if f.ride_height_rr else None,
+            rh_front=round(f.rh_front, 2) if f.rh_front else None,
+            rh_rear=round(f.rh_rear, 2) if f.rh_rear else None,
+        ))
+
+    def _avg(attr):
+        vals = [getattr(f, attr) for f in frames if getattr(f, attr) is not None and getattr(f, attr) > 0]
+        return round(float(np.mean(vals)), 2) if vals else None
+
+    def _min(attr):
+        vals = [getattr(f, attr) for f in frames if getattr(f, attr) is not None and getattr(f, attr) > 0]
+        return round(float(np.min(vals)), 2) if vals else None
+
+    summary = SuspensionSummary(
+        lap_index=lap_index,
+        avg_damper_fl=_avg("ride_height_fl"),
+        avg_damper_fr=_avg("ride_height_fr"),
+        avg_damper_rl=_avg("ride_height_rl"),
+        avg_damper_rr=_avg("ride_height_rr"),
+        avg_rh_front=_avg("rh_front"),
+        avg_rh_rear=_avg("rh_rear"),
+        min_rh_front=_min("rh_front"),
+        min_rh_rear=_min("rh_rear"),
+        has_data=len(trend) > 0,
+    )
+
+    return SuspensionReport(summary=summary, trend=trend)
 
 
 # ── Distance-normalised lap comparison ───────────────────────────────────────

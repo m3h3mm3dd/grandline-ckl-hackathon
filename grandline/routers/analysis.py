@@ -9,6 +9,7 @@ GET /analysis/{session_id}/lap/{lap_index}/corners    → per-corner analysis
 GET /analysis/{session_id}/lap/{lap_index}/gg         → GG diagram data
 GET /analysis/{session_id}/lap/{lap_index}/tyres      → tyre temp trend
 GET /analysis/{session_id}/lap/{lap_index}/degradation → tyre degradation summary
+GET /analysis/{session_id}/lap/{lap_index}/suspension → suspension / ride-height trend
 GET /analysis/{session_id}/compare                    → distance-normalised comparison
 GET /analysis/{session_id}/delta?lap_a=0&lap_b=1      → ΔT chart data
 GET /analysis/{session_id}/theoretical_best           → purple lap
@@ -26,6 +27,7 @@ from services.metrics_engine import (
     compute_sectors,
     compute_tyre_trend,
     compute_tyre_degradation,
+    compute_suspension_report,
     compare_laps_distance,
     compare_laps,
     compute_delta_time,
@@ -39,6 +41,7 @@ from models.schemas import (
     DistanceComparison, LapComparison,
     DeltaTimeSeries, TheoreticalBest,
     CornerScoreboard, CornerScoreRow,
+    SuspensionReport,
 )
 
 router = APIRouter()
@@ -201,6 +204,30 @@ def get_tyre_degradation(session_id: str, lap_index: int):
     s = _require_session(session_id)
     frames = _require_lap(s, lap_index)
     return compute_tyre_degradation(frames, lap_index)
+
+
+# ── Suspension / Ride Height ───────────────────────────────────────────────────
+
+@router.get("/{session_id}/lap/{lap_index}/suspension", response_model=SuspensionReport)
+def get_suspension(
+    session_id: str,
+    lap_index: int,
+    interval_s: float = Query(1.0, ge=0.2, le=5.0, description="Sample interval in seconds"),
+):
+    """
+    Suspension / ride-height time-series for a lap.
+
+    Returns:
+    - **damper_fl/fr/rl/rr** — per-wheel damper stroke (mm) from Badenia 560
+    - **rh_front / rh_rear** — true centerline ride height (mm) from optical sensor
+    - **summary** — per-lap averages and minimum ride heights
+
+    The minimum ride height is particularly useful for detecting kerb rides and
+    bottoming-out events that can damage the floor or affect aero balance.
+    """
+    s = _require_session(session_id)
+    frames = _require_lap(s, lap_index)
+    return compute_suspension_report(frames, lap_index, sample_interval_s=interval_s)
 
 
 # ── Lap comparison ────────────────────────────────────────────────────────────
