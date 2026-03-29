@@ -45,11 +45,14 @@ class TelemetryFrame(BaseModel):
     brake_press_fl: Optional[float] = None
     brake_press_fr: Optional[float] = None
 
-    # Suspension (Badenia 560)
+    # Suspension (Badenia 560) — damper stroke per wheel (mm)
     ride_height_fl: Optional[float] = None
     ride_height_fr: Optional[float] = None
     ride_height_rl: Optional[float] = None
     ride_height_rr: Optional[float] = None
+    # True ride height from optical/laser sensor — single front/rear value (mm)
+    rh_front: Optional[float] = None
+    rh_rear:  Optional[float] = None
 
     # Wheel loads
     wheel_load_fl: Optional[float] = None
@@ -327,3 +330,36 @@ class RealtimeEvent(BaseModel):
     type:     Literal["frame", "coach_tip", "lap_complete", "session_end"]
     t:        float
     payload:  dict
+
+
+# ── Suspension / Ride Height ───────────────────────────────────────────────────
+
+class SuspensionState(BaseModel):
+    """One downsampled suspension sample through the lap."""
+    t:          float           # seconds since lap start
+    distance_m: Optional[float] = None
+    damper_fl:  Optional[float] = None   # mm — individual wheel damper stroke
+    damper_fr:  Optional[float] = None
+    damper_rl:  Optional[float] = None
+    damper_rr:  Optional[float] = None
+    rh_front:   Optional[float] = None   # mm — true front ride height (optical)
+    rh_rear:    Optional[float] = None   # mm — true rear ride height (optical)
+
+
+class SuspensionSummary(BaseModel):
+    """Per-lap suspension statistics."""
+    lap_index:      int
+    avg_damper_fl:  Optional[float] = None
+    avg_damper_fr:  Optional[float] = None
+    avg_damper_rl:  Optional[float] = None
+    avg_damper_rr:  Optional[float] = None
+    avg_rh_front:   Optional[float] = None
+    avg_rh_rear:    Optional[float] = None
+    min_rh_front:   Optional[float] = None   # lowest ride height seen (most compressed)
+    min_rh_rear:    Optional[float] = None
+    has_data:       bool = False
+
+
+class SuspensionReport(BaseModel):
+    summary: SuspensionSummary
+    trend:   list[SuspensionState]
