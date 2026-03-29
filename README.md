@@ -6,6 +6,35 @@ GRANDLINE is a compact race engineering workspace built on the **A2RL Yas Marina
 
 It transforms raw racing telemetry into a judge-friendly, engineering-grade dashboard for replay, comparison, corner analysis, tyre monitoring, and AI-assisted debrief. 🎯
 
+### Demo-ready preload flow 🚀
+The three hackathon sessions are automatically loaded at startup so the product is immediately usable in a demo environment.
+
+---
+
+### Demo Screenshots 📸
+
+### Main dashboard
+![GRANDLINE main dashboard](docs/images/dashboard-main.jpeg)
+
+A single-screen engineering workspace combining:
+- track map
+- onboard replay
+- live telemetry
+- lap state
+- lower analysis panels
+
+### Telemetry + systems panel
+![GRANDLINE telemetry and systems panel](docs/images/dashboard-telemetry.jpeg)
+
+Expanded engineering view with:
+- GG diagram
+- tyre temperatures
+- session stats
+- car systems
+- AI computer health
+
+---
+
 ---
 
 ## Overview 🌌
@@ -120,37 +149,6 @@ Replay a lap while seeing:
 - AI coaching overlays
 - sector context
 - comparative references
-
-### Demo-ready preload flow 🚀
-The three hackathon sessions are automatically loaded at startup so the product is immediately usable in a demo environment.
-
----
-
-## Demo Screenshots 📸
-
-### Main dashboard
-![GRANDLINE main dashboard](docs/images/dashboard-main.jpg)
-
-A single-screen engineering workspace combining:
-- track map
-- onboard replay
-- live telemetry
-- lap state
-- lower analysis panels
-
-### Telemetry + systems panel
-![GRANDLINE telemetry and systems panel](docs/images/dashboard-telemetry.jpg)
-
-Expanded engineering view with:
-- GG diagram
-- tyre temperatures
-- session stats
-- car systems
-- AI computer health
-
-> Put your screenshots in `docs/images/` and update the paths if your filenames differ.
-
----
 
 ## Dataset & Provenance 🗂️
 
