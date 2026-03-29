@@ -59,6 +59,8 @@ async def _generate(
     session_id: str,
     lap_index: int,
     speed_factor: float,
+    camera: str = "camera_fl",
+    start_frame: int = 0,
 ) -> AsyncGenerator[str, None]:
     s = get_session(session_id)
     if not s or not s._ready.is_set():
@@ -71,15 +73,33 @@ async def _generate(
 
     detail     = s.lap_details[lap_index]
     frames     = detail.frames
-    cam_frames = s.camera_laps[lap_index] if lap_index < len(s.camera_laps) else []
+    # Get camera frames for the requested camera
+    cam_laps   = s.camera_laps_by_topic.get(camera, [])
+    cam_frames = cam_laps[lap_index] if lap_index < len(cam_laps) else []
+
+    log.info("Stream: session=%s lap=%d camera=%s frames=%d cam_frames=%d start_frame=%d",
+             session_id, lap_index, camera, len(frames), len(cam_frames), start_frame)
 
     # Downsample telemetry to stream Hz (source is ~100 Hz)
     step = max(1, int(100 / _STREAM_HZ))
-    stream_frames = frames[::step]
+    all_stream_frames = frames[::step]
+    total_frames = len(all_stream_frames)
+
+    # Skip to start_frame for speed-change resume without restarting from lap 0
+    clipped_start = max(0, min(start_frame, total_frames - 1))
+    stream_frames = all_stream_frames[clipped_start:]
 
     if not stream_frames:
         yield _sse("error", {"message": "no frames"})
         return
+
+    # Send metadata so frontend knows total frame count and lap distance
+    lap_dist = getattr(detail.summary, "lap_dist_m", None) or 0.0
+    yield _sse("stream_meta", {
+        "total_frames": total_frames,
+        "lap_dist_m": round(lap_dist, 1),
+        "start_frame": clipped_start,
+    })
 
     # ── Build rule-based coaching engine (always on, no API key needed) ──
     try:
@@ -102,6 +122,8 @@ async def _generate(
             frame_dict["ref_speed"] = round(ref_profile.speed_at(d), 1)
         else:
             frame_dict["ref_speed"] = None
+        # Absolute frame index (for seek/resume support)
+        frame_dict["frame_idx"] = clipped_start + i
         yield _sse("frame", frame_dict)
 
         # Camera frame (every _CAMERA_EVERY_N telemetry frames)
@@ -127,18 +149,31 @@ async def _generate(
     yield _sse("lap_end", detail.summary.model_dump())
 
 
+@router.get("/{session_id}/cameras")
+async def list_cameras(session_id: str):
+    """List available camera feeds for this session."""
+    s = get_session(session_id)
+    if not s:
+        raise HTTPException(404, "Session not found")
+    if not s._ready.is_set():
+        raise HTTPException(202, "Session still processing")
+    return {"cameras": s.available_cameras or ["camera_fl"], "default": "camera_fl"}
+
+
 @router.get("/{session_id}/lap/{lap_index}")
 async def stream_lap(
     session_id: str,
     lap_index: int,
     speed: float = Query(1.0, ge=0.1, le=10.0, description="Replay speed factor"),
+    camera: str = Query("camera_fl", description="Camera to stream (camera_fl, camera_r, etc)"),
+    start_frame: int = Query(0, ge=0, description="Frame index to resume from (speed-change seek)"),
 ):
     s = get_session(session_id)
     if not s:
         raise HTTPException(404, "Session not found")
 
     return StreamingResponse(
-        _generate(session_id, lap_index, speed),
+        _generate(session_id, lap_index, speed, camera, start_frame),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache, no-transform",

@@ -6,26 +6,53 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0a0f;--surf:#12121a;--border:#1e1e2e;
-  --red:#e63946;--green:#2ecc71;--blue:#00b4d8;--yellow:#f4a261;
-  --text:#f0f0f5;--muted:#6b7280;
-  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono','Courier New',monospace;
+  /* ── Apple-inspired design system ── */
+  --bg:#000000;
+  --surf:#111111;
+  --surf2:#1c1c1e;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.18);
+  --red:#ff3b30;
+  --green:#30d158;
+  --blue:#0a84ff;
+  --yellow:#ffd60a;
+  --purple:#bf5af2;
+  --text:#f5f5f7;
+  --muted:rgba(255,255,255,.42);
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',system-ui,sans-serif;
+  --mono:'SF Mono','Menlo','Monaco','Courier New',monospace;
+  --radius:10px;
+  --shadow:0 4px 24px rgba(0,0,0,.6);
 }
 html{height:100%;overflow:hidden}
-body{height:100%;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--font)}
+body{height:100%;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
 
 /* ── HEADER ── */
-header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--surf);border-bottom:1px solid var(--border);height:44px;flex-shrink:0}
-.logo{font-size:1.2rem;font-weight:900;letter-spacing:3px;color:var(--red)}
-.logo b{color:var(--text)}
-.badge{background:var(--red);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:3px;letter-spacing:1px}
-.subtitle{color:var(--muted);font-size:.75rem}
-header select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:6px;font-size:.8rem;cursor:pointer;outline:none}
-.hstatus{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+header{
+  display:flex;align-items:center;gap:14px;padding:0 20px;
+  background:rgba(0,0,0,.88);
+  border-bottom:1px solid var(--border);height:46px;flex-shrink:0;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.logo{font-size:1.05rem;font-weight:700;letter-spacing:4px;color:var(--red);text-transform:uppercase}
+.logo b{color:var(--text);font-weight:300;letter-spacing:2px}
+.badge{
+  background:rgba(255,59,48,.15);color:var(--red);border:1px solid rgba(255,59,48,.3);
+  font-size:.55rem;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:1.5px;text-transform:uppercase;
+}
+.subtitle{color:var(--muted);font-size:.7rem;letter-spacing:.3px}
+header select{
+  background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);
+  padding:5px 12px;border-radius:8px;font-size:.75rem;cursor:pointer;outline:none;
+  -webkit-appearance:none;font-family:var(--font);
+  transition:border-color .15s;
+}
+header select:hover{border-color:var(--border-strong)}
+.hstatus{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:.7rem;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
 .dot.off{background:var(--red);animation:none!important}
 .dot{animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
 /* ── LAYOUT ── */
 .layout{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;flex:1;min-height:0;gap:1px;background:var(--border)}
@@ -61,7 +88,11 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 
 /* ── PANELS ── */
 .panel{background:var(--surf);display:flex;flex-direction:column;overflow:hidden}
-.ptitle{font-size:.65rem;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ptitle{
+  font-size:.62rem;font-weight:500;letter-spacing:.5px;color:var(--muted);
+  padding:9px 14px;border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+}
 
 /* ── TRACK MAP ── */
 #track-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:6px;position:relative;overflow:hidden;min-height:0}
@@ -74,20 +105,37 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 
 /* ── CAMERA ── */
 #cam-wrap{flex:1;position:relative;background:#000;overflow:hidden}
-#cam-a,#cam-b{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .15s ease}
+#cam-a,#cam-b{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .12s ease}
 #cam-a{opacity:1}#cam-b{opacity:0}
 .cam-hud{position:absolute;inset:0;pointer-events:none}
-.cam-live{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:2px 8px;font-size:.65rem;font-weight:700;display:flex;align-items:center;gap:5px}
-.cam-livedot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite}
-#cam-speed-hud{position:absolute;top:8px;right:8px;font-size:2rem;font-weight:900;font-family:var(--mono);color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);line-height:1}
-#cam-speed-unit{font-size:.7rem;color:rgba(255,255,255,.6);text-align:right}
-#cam-thr-bar{position:absolute;bottom:0;left:0;height:4px;background:var(--green);width:0%;transition:width .1s}
-#cam-brk-bar{position:absolute;bottom:4px;left:0;height:4px;background:var(--red);width:0%;transition:width .1s}
-#cam-nosig{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:.8rem}
-#cam-gear-hud{position:absolute;bottom:16px;right:12px;font-size:3rem;font-weight:900;font-family:var(--mono);color:rgba(255,255,255,.9);text-shadow:0 2px 16px rgba(0,0,0,.9)}
-/* Steering indicator */
-#steer-wrap{position:absolute;bottom:12px;left:50%;transform:translateX(-50%)}
-#steer-ring{width:44px;height:44px}
+/* LIVE badge */
+.cam-live{
+  position:absolute;top:10px;left:10px;
+  background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:3px 10px;font-size:.58rem;font-weight:600;
+  display:flex;align-items:center;gap:5px;backdrop-filter:blur(8px);letter-spacing:.3px;
+}
+.cam-livedot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite;flex-shrink:0}
+/* Speed number (top-right) */
+#cam-speed-hud{
+  position:absolute;top:10px;right:10px;
+  font-size:2.4rem;font-weight:700;font-family:var(--mono);
+  color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.9);line-height:1;text-align:right;
+}
+#cam-speed-unit{font-size:.6rem;color:rgba(255,255,255,.5);text-align:right;letter-spacing:1px;margin-top:1px}
+/* Thr/Brk bars — 3px hairlines at very bottom */
+#cam-thr-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--green);width:0%;transition:width .08s linear}
+#cam-brk-bar{position:absolute;bottom:3px;left:0;height:3px;background:var(--red);width:0%;transition:width .08s linear}
+#cam-nosig{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:.75rem;letter-spacing:.5px}
+/* Gear (bottom-right) */
+#cam-gear-hud{
+  position:absolute;bottom:16px;right:14px;
+  font-size:2.6rem;font-weight:700;font-family:var(--mono);
+  color:rgba(255,255,255,.88);text-shadow:0 2px 20px rgba(0,0,0,.95);
+}
+/* Steering canvas */
+#steer-wrap{position:absolute;bottom:16px;left:50%;transform:translateX(-50%)}
+#steer-canvas{width:48px;height:48px;display:block}
 
 /* ══════════════════════════════════════════════════════════════
    CAMERA HUD  — matches reference image layout exactly
@@ -170,61 +218,48 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 }
 
 /* ══════════════════════════════════════════════════════════════
-   COACHING RADIO PANEL (below camera)
+   COACHING RADIO PANEL (below camera) — clean, minimal
    ══════════════════════════════════════════════════════════════ */
 #coaching-panel{
-  background:var(--surf);
-  border-top:2px solid var(--border);
-  flex-shrink:0;
-  height:76px;
-  display:flex;
-  align-items:stretch;
-  position:relative;
-  overflow:hidden;
+  background:var(--surf);border-top:1px solid var(--border);
+  flex-shrink:0;height:72px;display:flex;align-items:stretch;
+  position:relative;overflow:hidden;
 }
 #radio-icon-cell{
-  width:60px;min-width:60px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.6rem;
-  background:var(--bg);
-  border-right:1px solid var(--border);
-  transition:background .5s,font-size .2s;
-  flex-shrink:0;
+  width:56px;min-width:56px;display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;background:var(--bg);border-right:1px solid var(--border);
+  transition:background .4s;flex-shrink:0;
 }
 #radio-text-cell{
-  flex:1;padding:9px 12px;display:flex;flex-direction:column;
+  flex:1;padding:9px 14px;display:flex;flex-direction:column;
   justify-content:center;overflow:hidden;
 }
 #radio-headline{
-  font-size:.76rem;font-weight:800;letter-spacing:.6px;
-  color:#f0f0f5;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:.72rem;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px;
 }
 #radio-detail{
-  font-size:.64rem;color:var(--muted);line-height:1.45;margin-top:3px;
+  font-size:.6rem;color:var(--muted);line-height:1.45;margin-top:3px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 #radio-kind-badge{
-  position:absolute;top:7px;right:10px;
-  font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;
-  padding:2px 7px;border-radius:3px;font-weight:800;
+  position:absolute;top:8px;right:10px;
+  font-size:.46rem;letter-spacing:1px;text-transform:uppercase;
+  padding:2px 8px;border-radius:20px;font-weight:600;
 }
 #radio-queue-dot{
   position:absolute;bottom:7px;right:10px;
-  font-size:.54rem;color:var(--muted);font-family:var(--mono);
+  font-size:.52rem;color:var(--muted);font-family:var(--mono);
 }
-/* Kind border accents */
-.radio-feedback       {border-left:3px solid #60a5fa}
-.radio-recommendation {border-left:3px solid #fbbf24}
-.radio-motivation     {border-left:3px solid #4ade80}
-/* Entry animation */
-@keyframes radioSlide{from{transform:translateY(110%);opacity:0}to{transform:translateY(0);opacity:1}}
-.radio-slide{animation:radioSlide .32s cubic-bezier(.22,1,.36,1) both}
+.radio-feedback       {border-left:3px solid var(--blue)}
+.radio-recommendation {border-left:3px solid var(--yellow)}
+.radio-motivation     {border-left:3px solid var(--green)}
+@keyframes radioSlide{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.radio-slide{animation:radioSlide .28s cubic-bezier(.22,1,.36,1) both}
 
-/* ── RIGHT PANEL: LIVE STATS ── */
-/* #stats-panel moved to left drawer (.ldrawer) */
-.stat-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
-.stat-block-title{font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:700}
+/* ── STAT BLOCKS ── */
+.stat-block{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.stat-block-title{font-size:.55rem;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:500}
 
 /* GG Diagram */
 #gg-canvas{width:100%;aspect-ratio:1;display:block;border-radius:4px}
@@ -249,24 +284,40 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 /* ── ANALYSIS ROW (fixed height, shown after session load) ── */
 .analysis-row{flex-shrink:0;height:200px}
 
-/* ── SYSTEMS ROW (race flags + engine + AI health) ── */
-.sys-row{display:flex;align-items:stretch;gap:1px;background:var(--border);height:36px;flex-shrink:0;border-top:1px solid var(--border)}
-.scell{background:var(--surf);display:flex;align-items:center;gap:5px;padding:0 10px;font-size:.65rem;white-space:nowrap;min-width:0}
-.scell-label{color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-size:.55rem}
-.scell-val{font-family:var(--mono);font-weight:700}
-.sbar{height:6px;border-radius:3px;min-width:50px;flex:1;background:var(--bg);overflow:hidden;position:relative}
-.sbar-fill{height:100%;border-radius:3px;transition:width .3s}
-#flag-badge{padding:3px 10px;border-radius:4px;font-size:.65rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;background:#1e1e2e;color:#6b7280}
+/* ── SYSTEMS ROW ── */
+.sys-row{
+  display:flex;align-items:stretch;background:var(--bg);height:34px;flex-shrink:0;
+  border-top:1px solid var(--border);
+}
+.scell{
+  display:flex;align-items:center;gap:6px;padding:0 12px;font-size:.62rem;
+  white-space:nowrap;min-width:0;border-right:1px solid var(--border);
+}
+.scell-label{color:var(--muted);letter-spacing:.5px;font-size:.55rem;font-weight:400}
+.scell-val{font-family:var(--mono);font-weight:600;font-size:.68rem}
+.sbar{height:4px;border-radius:2px;min-width:44px;flex:1;background:rgba(255,255,255,.06);overflow:hidden}
+.sbar-fill{height:100%;border-radius:2px;transition:width .25s ease}
+#flag-badge{
+  padding:3px 10px;border-radius:20px;font-size:.58rem;font-weight:600;
+  letter-spacing:.5px;text-transform:uppercase;background:rgba(255,255,255,.06);color:var(--muted);
+}
 
 /* Dashboard row */
-.dash{display:flex;align-items:stretch;gap:1px;background:var(--border);height:56px;flex-shrink:0}
-.dcell{background:var(--surf);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;min-width:0}
-.dlabel{font-size:.55rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:1px}
-.dval{font-size:1.5rem;font-weight:900;font-family:var(--mono);line-height:1}
-.dunit{font-size:.55rem;color:var(--muted)}
+.dash{
+  display:flex;align-items:stretch;height:58px;flex-shrink:0;
+  border-top:1px solid var(--border);
+}
+.dcell{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:4px 6px;min-width:0;border-right:1px solid var(--border);
+}
+.dcell:last-child{border-right:none}
+.dlabel{font-size:.5rem;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:1px;font-weight:400}
+.dval{font-size:1.45rem;font-weight:600;font-family:var(--mono);line-height:1}
+.dunit{font-size:.5rem;color:var(--muted)}
 .speed-color{color:var(--blue)}
-.bar-h{width:90%;max-width:100px;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:2px}
-.bar-h-fill{height:100%;border-radius:3px;transition:width .1s}
+.bar-h{width:85%;max-width:90px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-top:3px}
+.bar-h-fill{height:100%;border-radius:2px;transition:width .1s linear}
 .thr-fill{background:var(--green)}
 .brk-fill{background:var(--red)}
 .rpm-fill{background:var(--blue)}
@@ -295,19 +346,148 @@ header select{background:var(--bg);border:1px solid var(--border);color:var(--te
 .sector-seg{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:700;font-family:var(--mono)}
 
 /* Controls row */
-.ctrls{display:flex;align-items:center;gap:10px;padding:6px 14px;border-top:1px solid var(--border);flex:1}
-.lap-timer{font-size:1.4rem;font-weight:900;font-family:var(--mono);color:var(--red);min-width:100px}
-.lap-sel-row{display:flex;align-items:center;gap:6px}
-.lap-sel-row label{font-size:.72rem;color:var(--muted)}
+.ctrls{display:flex;align-items:center;gap:8px;padding:6px 14px;border-top:1px solid var(--border);flex:1}
+.lap-timer{font-size:1.35rem;font-weight:600;font-family:var(--mono);color:var(--red);min-width:88px}
+.lap-sel-row{display:flex;align-items:center;gap:5px}
+.lap-sel-row label{font-size:.65rem;color:var(--muted)}
 .progress-wrap{flex:1;display:flex;flex-direction:column;gap:3px}
-.progress-bg{height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
-.progress-fg{height:100%;background:linear-gradient(90deg,var(--blue),var(--red));border-radius:3px;transition:width .15s;width:0%}
-.prog-label{font-size:.62rem;color:var(--muted);font-family:var(--mono)}
-btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 11px;border-radius:6px;cursor:pointer;font-size:.78rem;transition:all .15s;font-family:inherit}
-.cbtn:hover{border-color:var(--red);color:var(--red)}
+.progress-bg{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.progress-fg{height:100%;background:linear-gradient(90deg,var(--blue),var(--red));border-radius:2px;transition:width .12s linear;width:0%}
+.prog-label{font-size:.58rem;color:var(--muted);font-family:var(--mono)}
+.cbtn{
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  color:rgba(255,255,255,.7);padding:5px 12px;border-radius:8px;
+  cursor:pointer;font-size:.72rem;transition:all .15s;font-family:var(--font);font-weight:500;
+}
+.cbtn:hover{background:rgba(255,255,255,.1);border-color:var(--border-strong);color:var(--text)}
 .cbtn.act{background:var(--red);border-color:var(--red);color:#fff}
-.play-btn{padding:5px 14px;font-size:.9rem}
-#debug-bar{font-size:.65rem;color:var(--muted);padding:2px 14px;border-top:1px solid var(--border);font-family:var(--mono)}
+.play-btn{padding:5px 16px;font-size:.82rem;font-weight:600}
+#debug-bar{font-size:.58rem;color:rgba(255,255,255,.2);padding:2px 14px;border-top:1px solid var(--border);font-family:var(--mono)}
+
+/* ══════════════════════════════════════════════════════════════
+   COACHING OVERLAY ON CAMERA  — slide-up on new event
+   ══════════════════════════════════════════════════════════════ */
+#cam-coach-overlay{
+  position:absolute;bottom:86px;left:8px;right:8px;
+  background:rgba(5,5,15,.88);
+  border-left:4px solid #60a5fa;
+  border-radius:6px;padding:8px 12px;display:none;
+  pointer-events:none;z-index:14;
+  animation:coachSlide .28s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes coachSlide{
+  from{transform:translateY(16px);opacity:0}
+  to  {transform:translateY(0);   opacity:1}
+}
+#cam-coach-badge{
+  font-size:.48rem;font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:4px;display:block;
+}
+#cam-coach-text{
+  font-size:.74rem;font-weight:800;color:#f0f0f5;line-height:1.3;
+}
+#cam-coach-detail{
+  font-size:.58rem;color:rgba(255,255,255,.62);margin-top:3px;line-height:1.45;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TRAJECTORY OVERLAY ON CAMERA
+   — bottom-left, shows ideal line vs actual driver path
+   ══════════════════════════════════════════════════════════════ */
+#traj-canvas{
+  position:absolute;
+  bottom:72px;left:10px;
+  width:150px;height:110px;
+  border:1px solid rgba(255,255,255,.13);border-radius:10px;
+  background:rgba(0,0,0,.62);backdrop-filter:blur(8px);
+  display:none;z-index:12;
+}
+#traj-label{
+  position:absolute;bottom:186px;left:10px;
+  font-size:.42rem;font-weight:500;letter-spacing:1.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.4);
+  font-family:var(--mono);display:none;z-index:13;
+  background:rgba(0,0,0,.4);padding:1px 5px;border-radius:4px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MAP CONTROL BUTTONS (top-right cluster)
+   ══════════════════════════════════════════════════════════════ */
+#map-controls{
+  position:absolute;top:8px;right:8px;z-index:20;
+  display:flex;gap:5px;align-items:center;
+}
+#map-3d-btn{
+  background:rgba(0,0,0,.72);
+  border:1px solid rgba(255,255,255,.22);
+  color:rgba(255,255,255,.75);
+  padding:4px 11px;border-radius:20px;
+  font-size:.58rem;font-weight:600;letter-spacing:.5px;
+  cursor:pointer;backdrop-filter:blur(10px);
+  transition:all .15s;
+}
+#map-3d-btn:hover{border-color:var(--blue);color:var(--blue);background:rgba(10,132,255,.12)}
+#map-3d-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* Google-Maps-style zoom buttons (top-left) */
+#map-zoom-btns{
+  position:absolute;top:8px;left:8px;z-index:20;
+  display:flex;flex-direction:column;gap:2px;
+}
+.mzbtn{
+  width:28px;height:28px;
+  background:rgba(0,0,0,.72);
+  border:1px solid rgba(255,255,255,.22);
+  color:rgba(255,255,255,.8);
+  border-radius:6px;font-size:1rem;font-weight:600;
+  cursor:pointer;backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .12s;line-height:1;
+}
+.mzbtn:hover{background:rgba(255,255,255,.14);border-color:var(--border-strong);color:#fff}
+
+/* 3D: CSS perspective applied to SVG */
+#track-svg{
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  transform-origin:50% 62%;
+  cursor:grab;
+}
+#track-svg:active{cursor:grabbing}
+#track-wrap.mode-3d #track-svg{transform:perspective(500px) rotateX(50deg) scale(1.3)}
+
+/* ══════════════════════════════════════════════════════════════
+   LAP SCRUBBER
+   ══════════════════════════════════════════════════════════════ */
+.scrubber-row{
+  display:flex;align-items:center;gap:10px;
+  padding:4px 16px;background:var(--surf);flex-shrink:0;
+  border-top:1px solid var(--border);
+}
+#scrubber{
+  flex:1;height:3px;-webkit-appearance:none;appearance:none;
+  background:rgba(255,255,255,.08);border-radius:2px;
+  outline:none;cursor:pointer;border:none;
+}
+#scrubber::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--red);border:2px solid #fff;
+  cursor:pointer;box-shadow:0 0 8px rgba(255,59,48,.5);
+  transition:transform .1s;
+}
+#scrubber::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.scr-time{font-size:.58rem;font-family:var(--mono);color:var(--muted);white-space:nowrap;min-width:40px}
+
+/* ══════════════════════════════════════════════════════════════
+   IDEAL LINE / PATH OVERLAYS on track map
+   ══════════════════════════════════════════════════════════════ */
+/* ideal line is dashed purple, driver path is speed-colored */
+/* colours applied via inline SVG stroke attributes */
+
+/* ══════════════════════════════════════════════════════════════
+   BETTER STEERING  — pulsing ring when at lock
+   ══════════════════════════════════════════════════════════════ */
+/* steer canvas pulse handled via JS */
+@keyframes steerPulse{0%,100%{opacity:1}50%{opacity:.4}}
 </style>
 </head>
 <body>
@@ -331,10 +511,21 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
 
   <!-- TRACK MAP -->
   <div class="panel">
-    <div class="ptitle">📍 Track Map — Yas Marina Circuit
+    <div class="ptitle" style="position:relative">
+      📍 Track Map — Yas Marina Circuit
       <span id="corner-approach" style="margin-left:10px;font-size:.7rem;color:var(--red);font-family:var(--mono);display:none"></span>
     </div>
-    <div id="track-wrap">
+    <div id="track-wrap" style="position:relative">
+      <!-- Zoom buttons (top-left, Google Maps style) -->
+      <div id="map-zoom-btns">
+        <button class="mzbtn" onclick="mapZoomIn()" title="Zoom in">+</button>
+        <button class="mzbtn" onclick="mapZoomOut()" title="Zoom out">−</button>
+        <button class="mzbtn" onclick="mapZoomReset()" title="Reset view" style="font-size:.65rem">⌂</button>
+      </div>
+      <!-- 2D / 3D toggle (top-right) -->
+      <div id="map-controls">
+        <button id="map-3d-btn" onclick="toggleMapMode()" title="Toggle 2D/3D view">3D</button>
+      </div>
       <svg id="track-svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
         <text x="50%" y="50%" text-anchor="middle" fill="#6b7280" font-size="13">Select a session</text>
       </svg>
@@ -343,7 +534,13 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
 
   <!-- CAMERA + COACHING PANEL -->
   <div class="panel" style="display:flex;flex-direction:column">
-    <div class="ptitle">📷 Onboard — Front Left</div>
+    <div class="ptitle" style="display:flex;align-items:center;justify-content:space-between">
+      <span>📷 Onboard</span>
+      <select id="cam-selector" onchange="onCameraChange()" style="padding:4px 8px;font-size:.75rem;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer">
+        <option value="camera_fl">Front Left</option>
+        <option value="camera_r">Right</option>
+      </select>
+    </div>
     <div id="cam-wrap" style="flex:1">
       <img id="cam-a" alt=""/>
       <img id="cam-b" alt=""/>
@@ -356,12 +553,9 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
           <div id="cam-speed-unit">km/h</div>
         </div>
         <div id="cam-gear-hud" style="display:none"></div>
-        <!-- Steering wheel SVG -->
+        <!-- Steering wheel (canvas-based, more reliable) -->
         <div id="steer-wrap" style="display:none">
-          <svg id="steer-ring" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3"/>
-            <line id="steer-line" x1="22" y1="22" x2="22" y2="5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
+          <canvas id="steer-canvas" width="52" height="52"></canvas>
         </div>
 
         <!-- ── CORNER WARNING (top-right) ── -->
@@ -394,6 +588,17 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
 
         <!-- ── BRAKE ZONE X MARKERS ── -->
         <div id="brake-markers"></div>
+
+        <!-- ── COACHING OVERLAY ON CAMERA ── -->
+        <div id="cam-coach-overlay">
+          <span id="cam-coach-badge">COACH</span>
+          <div id="cam-coach-text"></div>
+          <div id="cam-coach-detail"></div>
+        </div>
+
+        <!-- ── TRAJECTORY OVERLAY: ideal vs actual racing line ── -->
+        <canvas id="traj-canvas" width="300" height="220"></canvas>
+        <div id="traj-label">TRAJECTORY</div>
       </div>
       <div id="cam-thr-bar"></div>
       <div id="cam-brk-bar"></div>
@@ -567,6 +772,13 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
     </div>
   </div>
 
+  <!-- LAP SCRUBBER — seek to any point in the lap -->
+  <div class="scrubber-row">
+    <span class="scr-time" id="scr-elapsed">0:00</span>
+    <input type="range" id="scrubber" min="0" max="1000" value="0" step="1">
+    <span class="scr-time" id="scr-total">—:——</span>
+  </div>
+
   <!-- CONTROLS ROW -->
   <div class="ctrls">
     <div class="lap-timer" id="lap-timer">0:00.000</div>
@@ -579,9 +791,11 @@ btn,.cbtn{background:var(--bg);border:1px solid var(--border);color:var(--text);
       <div class="prog-label" id="prog-label">— / — m</div>
     </div>
     <button class="cbtn play-btn" id="play-btn" onclick="togglePlay()">▶ Play</button>
-    <button class="cbtn" id="sp1" onclick="setSpeed(1)">1×</button>
-    <button class="cbtn" id="sp2" onclick="setSpeed(2)">2×</button>
-    <button class="cbtn" id="sp4" onclick="setSpeed(4)">4×</button>
+    <button class="cbtn speed-btn" data-spd="0.5" onclick="setSpeed(0.5)">0.5×</button>
+    <button class="cbtn speed-btn act" data-spd="1" id="sp1" onclick="setSpeed(1)">1×</button>
+    <button class="cbtn speed-btn" data-spd="2" id="sp2" onclick="setSpeed(2)">2×</button>
+    <button class="cbtn speed-btn" data-spd="4" id="sp4" onclick="setSpeed(4)">4×</button>
+    <button class="cbtn" id="sp-idl" onclick="loadIdealLine()" title="Load ideal (best lap) line on map" style="font-size:.65rem">🏎 Ideal</button>
   </div>
   <div id="debug-bar">frames: 0 | cam frames: 0 | session: —</div>
 </div>
@@ -643,13 +857,108 @@ let frameCount = 0, camCount = 0;
 let svgXform = null, lapDistTotal = 0;
 let ggHistory = []; // {lat, lon, spd}
 let camActive = 'a'; // which img tag is front-buffer
+let currentCamera = 'camera_fl'; // selected camera for stream
 let sessionMaxSpd = 0, sessionMaxLatG = 0;
 let miniChartData = []; // last N speed values
+
+// ── Seek / resume state ───────────────────────────────────────────────────────
+let currentFrameIdx  = 0;    // absolute frame index from backend
+let totalStreamFrames = 0;   // total frames in current lap stream
+let lapTimeSec = 0;          // current lap time in seconds
+
+// ── Brake / throttle smoothing (EMA to remove binary spikes) ─────────────────
+let _smoothBrake = 0, _smoothThr = 0;
+const _EMA_ALPHA = 0.18;  // lower = smoother, higher = more responsive
+
+// ── Map mode & zoom/pan ───────────────────────────────────────────────────────
+let mapMode = '2d';          // '2d' | '3d'
+let idealLineData = null;    // {x,y,speed}[] for best-lap racing line
+
+// SVG zoom/pan state — viewBox-based (no CSS transforms involved)
+let _baseVB  = null;  // {x, y, w, h} — the initial viewBox set by renderTrack()
+let _curVB   = null;  // current viewBox (changes as user zooms/pans)
+let _dragSt  = null;  // drag state: {sx, sy, vbx, vby}
+
+function _setViewBox(x, y, w, h) {
+  _curVB = {x, y, w, h};
+  const svg = document.getElementById('track-svg');
+  if (svg) svg.setAttribute('viewBox',
+    `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`);
+}
+
+function _screenToSVG(screenX, screenY) {
+  const svg = document.getElementById('track-svg');
+  if (!svg || !_curVB) return {x: 0, y: 0};
+  const rect = svg.getBoundingClientRect();
+  return {
+    x: _curVB.x + (screenX - rect.left) / rect.width  * _curVB.w,
+    y: _curVB.y + (screenY - rect.top)  / rect.height * _curVB.h,
+  };
+}
+
+function _zoomAtSVGPoint(svgX, svgY, factor) {
+  if (!_curVB || !_baseVB) return;
+  const newW = Math.max(_baseVB.w * 0.08, Math.min(_baseVB.w * 3, _curVB.w / factor));
+  const newH = Math.max(_baseVB.h * 0.08, Math.min(_baseVB.h * 3, _curVB.h / factor));
+  // Keep svgX/svgY at the same relative position on screen
+  const relX = (svgX - _curVB.x) / _curVB.w;
+  const relY = (svgY - _curVB.y) / _curVB.h;
+  _setViewBox(svgX - relX * newW, svgY - relY * newH, newW, newH);
+}
+
+function mapZoomIn()    { if (_curVB && _baseVB) _zoomAtSVGPoint(_curVB.x + _curVB.w/2, _curVB.y + _curVB.h/2, 1.4); }
+function mapZoomOut()   { if (_curVB && _baseVB) _zoomAtSVGPoint(_curVB.x + _curVB.w/2, _curVB.y + _curVB.h/2, 1/1.4); }
+function mapZoomReset() { if (_baseVB) _setViewBox(_baseVB.x, _baseVB.y, _baseVB.w, _baseVB.h); }
+
+// ── Map drag listeners ────────────────────────────────────────────────────────
+(function initMapDrag() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const svg = document.getElementById('track-svg');
+    if (!svg) return;
+
+    svg.addEventListener('mousedown', e => {
+      if (e.button !== 0 || !_curVB) return;
+      _dragSt = {sx: e.clientX, sy: e.clientY, vbx: _curVB.x, vby: _curVB.y};
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!_dragSt || !_curVB) return;
+      const svgEl = document.getElementById('track-svg');
+      if (!svgEl) return;
+      const rect = svgEl.getBoundingClientRect();
+      const scaleX = _curVB.w / (rect.width  || 1);
+      const scaleY = _curVB.h / (rect.height || 1);
+      _setViewBox(
+        _dragSt.vbx - (e.clientX - _dragSt.sx) * scaleX,
+        _dragSt.vby - (e.clientY - _dragSt.sy) * scaleY,
+        _curVB.w, _curVB.h
+      );
+    });
+
+    document.addEventListener('mouseup', () => { _dragSt = null; });
+
+    // Wheel zoom (centred on cursor)
+    const wrap = document.getElementById('track-wrap');
+    if (wrap) {
+      wrap.addEventListener('wheel', e => {
+        e.preventDefault();
+        if (!_curVB || !_baseVB) return;
+        const factor = e.deltaY < 0 ? 1.25 : 0.8;
+        const svgPt  = _screenToSVG(e.clientX, e.clientY);
+        _zoomAtSVGPoint(svgPt.x, svgPt.y, factor);
+      }, {passive: false});
+    }
+  });
+}());
 
 // ── 60 FPS car interpolation ──────────────────────────────────────────────────
 let carPrev = null, carNext = null, carRecvAt = 0, carIntervalMs = 100;
 let ggRedrawCounter = 0;
 let miniW = 0, miniH = 0; // cached canvas dims
+
+// ── Mini-map (camera overlay) ─────────────────────────────────────────────────
+let miniMapReady = false;   // true once trackData is available for mini-map
 
 // Start RAF loop immediately — smooth car movement between SSE frames
 (function rafLoop() {
@@ -720,6 +1029,9 @@ async function onSession() {
     lapSummaries = await lapsRes.json();
     renderTrack();
     populateLapSelectors();
+    _mmBounds = null;   // reset mini-map bounds for new session
+    _baseVB   = null;   // reset zoom state — will be set by renderTrack()
+    _curVB    = null;
     document.getElementById('path-btn').style.display = '';
     setStatus(true, `Session loaded — ${lapSummaries.length} lap(s)`);
   } catch(e) {
@@ -756,7 +1068,333 @@ function onLap() {
   document.getElementById('lap-sel-bottom').value = currentLap;
   stopStream();
   ggHistory = [];
+  trailPts = []; _worldTrail = []; currentFrameIdx = 0; totalStreamFrames = 0;
+  _mmBounds = null;
+  _smoothBrake = 0; _smoothThr = 0;
+  idealLineData = null;
+  // Hide trajectory canvas until replay starts
+  const tc = document.getElementById('traj-canvas');
+  const tl = document.getElementById('traj-label');
+  if (tc) tc.style.display = 'none';
+  if (tl) tl.style.display = 'none';
+  const il = document.getElementById('ideal-line-layer');
+  if (il) il.innerHTML = '';
+  const pl = document.getElementById('path-layer');
+  if (pl) pl.innerHTML = '';
   drawGG();
+  loadAvailableCameras();  // populate camera selector
+  // Show lap time in scrubber
+  const lapSum = lapSummaries[currentLap];
+  if (lapSum) {
+    const el = document.getElementById('scr-total');
+    if (el) el.textContent = fmtTimeShort(lapSum.lap_time_s);
+  }
+  // Auto-load this lap's GPS trajectory on the main map
+  loadPath();
+}
+
+// ── Trajectory canvas on camera ────────────────────────────────────────────────
+let _mmBounds = null;   // shared bounds for projection
+let _worldTrail = [];   // raw world {x,y} points for trajectory
+
+function _buildMiniMapBounds(W, H) {
+  if (!trackData) return null;
+  const allPts = [...(trackData.outer||[]), ...(trackData.inner||[])];
+  if (!allPts.length) return null;
+  const xs = allPts.map(p=>p.x), ys = allPts.map(p=>p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const rX = x1-x0 || 1, rY = y1-y0 || 1;
+  const PAD = 9;
+  const sc = Math.min((W-PAD*2)/rX, (H-PAD*2)/rY);
+  return {
+    x0, y0, sc,
+    offX: PAD + (W-PAD*2-rX*sc)/2,
+    offY: PAD + (H-PAD*2-rY*sc)/2, H,
+  };
+}
+
+function _mmProject(b, wx, wy) {
+  return [b.offX + (wx-b.x0)*b.sc, b.H - (b.offY + (wy-b.y0)*b.sc)];
+}
+
+function updateMiniMapCam(carX, carY) {
+  // Keep world trail for trajectory canvas
+  _worldTrail.push({x: carX, y: carY});
+  if (_worldTrail.length > 500) _worldTrail.shift();
+
+  const canvas = document.getElementById('traj-canvas');
+  if (!canvas || !trackData) return;
+  const W = canvas.width, H = canvas.height;
+  if (!_mmBounds) _mmBounds = _buildMiniMapBounds(W, H);
+  if (!_mmBounds) return;
+  const b = _mmBounds;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Track surface fill ──
+  if (trackData.outer?.length && trackData.inner?.length) {
+    ctx.beginPath();
+    trackData.outer.forEach((p,i) => {
+      const [sx,sy] = _mmProject(b,p.x,p.y);
+      i===0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,.04)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)';
+    ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.beginPath();
+    trackData.inner.forEach((p,i) => {
+      const [sx,sy] = _mmProject(b,p.x,p.y);
+      i===0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.1)';
+    ctx.lineWidth = 0.8; ctx.stroke();
+  }
+
+  // ── Ideal racing line (purple, dashed) ──
+  if (idealLineData?.length > 1) {
+    ctx.beginPath();
+    idealLineData.forEach((p,i) => {
+      const [sx,sy] = _mmProject(b,p.x,p.y);
+      i===0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    });
+    ctx.strokeStyle = 'rgba(191,90,242,.75)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,5]); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // ── Actual driven path (red) ──
+  if (_worldTrail.length > 2) {
+    ctx.beginPath();
+    _worldTrail.forEach((p,i) => {
+      const [sx,sy] = _mmProject(b,p.x,p.y);
+      i===0 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+    });
+    ctx.strokeStyle = 'rgba(255,59,48,.8)';
+    ctx.lineWidth = 1.8; ctx.stroke();
+  }
+
+  // ── Car position (glowing red dot) ──
+  const [cx2,cy2] = _mmProject(b, carX, carY);
+  const grd = ctx.createRadialGradient(cx2,cy2,1,cx2,cy2,10);
+  grd.addColorStop(0,'rgba(255,59,48,.55)');
+  grd.addColorStop(1,'rgba(255,59,48,0)');
+  ctx.beginPath(); ctx.arc(cx2,cy2,10,0,Math.PI*2);
+  ctx.fillStyle = grd; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx2,cy2,4,0,Math.PI*2);
+  ctx.fillStyle = '#ff3b30'; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  // ── Legend ──
+  ctx.font = '500 8px var(--mono,"SF Mono","Menlo",monospace)';
+  if (idealLineData?.length) {
+    ctx.fillStyle = 'rgba(191,90,242,.8)';
+    ctx.fillText('— IDEAL', 6, H - 14);
+  }
+  ctx.fillStyle = 'rgba(255,59,48,.8)';
+  ctx.fillText('— ACTUAL', 6, H - 5);
+}
+
+// ── Coaching overlay on camera ────────────────────────────────────────────────
+let _camCoachTO = null;
+function showCoachOnCamera(ev) {
+  const overlay = document.getElementById('cam-coach-overlay');
+  const badge   = document.getElementById('cam-coach-badge');
+  const text    = document.getElementById('cam-coach-text');
+  const detail  = document.getElementById('cam-coach-detail');
+  if (!overlay) return;
+
+  const cfg = {
+    feedback:       {col:'#60a5fa', label:'📡 FEEDBACK'},
+    recommendation: {col:'#fbbf24', label:'⚡ RECOMMENDATION'},
+    motivation:     {col:'#4ade80', label:'🏎 MOTIVATION'},
+  }[ev.kind] || {col:'#94a3b8', label:'COACH'};
+
+  badge.textContent  = cfg.label;
+  badge.style.color  = cfg.col;
+  text.textContent   = ev.headline || '';
+  detail.textContent = ev.detail   || '';
+  overlay.style.borderLeftColor = cfg.col;
+  overlay.style.display = 'block';
+  // Re-trigger animation
+  overlay.classList.remove('cam-coach-anim');
+  void overlay.offsetWidth;
+  overlay.classList.add('cam-coach-anim');
+
+  if (_camCoachTO) clearTimeout(_camCoachTO);
+  _camCoachTO = setTimeout(() => { overlay.style.display = 'none'; }, 5500);
+}
+
+// ── 2D / 3D Map Toggle ────────────────────────────────────────────────────────
+function toggleMapMode() {
+  const btn  = document.getElementById('map-3d-btn');
+  const wrap = document.getElementById('track-wrap');
+  mapMode = (mapMode === '2d') ? '3d' : '2d';
+  if (mapMode === '3d') {
+    wrap.classList.add('mode-3d');
+    btn.textContent = '2D';
+    btn.classList.add('active');
+    btn.title = 'Switch to 2D top-down view';
+  } else {
+    wrap.classList.remove('mode-3d');
+    btn.textContent = '3D';
+    btn.classList.remove('active');
+    btn.title = 'Switch to 3D perspective view';
+  }
+}
+
+// ── Ideal / Best-Lap Racing Line ──────────────────────────────────────────────
+async function loadIdealLine() {
+  if (!currentSession || !lapSummaries.length) return;
+  const bestIdx = lapSummaries.reduce((bi, l, i) =>
+    l.lap_time_s < lapSummaries[bi].lap_time_s ? i : bi, 0);
+  try {
+    const r = await fetch(`${API}/analysis/${currentSession}/lap/${bestIdx}/positions?max_pts=800`);
+    idealLineData = await r.json();
+    _mmBounds = null; // force re-render
+    drawIdealLine();
+    // Also refresh the trajectory canvas overlay
+    if (_worldTrail.length > 0) updateMiniMapCam(_worldTrail[_worldTrail.length-1].x, _worldTrail[_worldTrail.length-1].y);
+    document.getElementById('sp-idl').textContent = '🏎 Hide Line';
+    document.getElementById('sp-idl').onclick = clearIdealLine;
+  } catch(e) { console.error('loadIdealLine:', e); }
+}
+
+function clearIdealLine() {
+  idealLineData = null;
+  const el = document.getElementById('ideal-line-layer');
+  if (el) el.innerHTML = '';
+  document.getElementById('sp-idl').textContent = '🏎 Ideal';
+  document.getElementById('sp-idl').onclick = loadIdealLine;
+}
+
+function drawIdealLine() {
+  if (!idealLineData || !svgXform) return;
+  const layer = document.getElementById('ideal-line-layer');
+  if (!layer) return;
+  let html = '';
+  const maxS = Math.max(...idealLineData.map(p=>p.speed||0), 1);
+  for (let i = 1; i < idealLineData.length; i++) {
+    const p0 = idealLineData[i-1], p1 = idealLineData[i];
+    const [x1,y1] = svgXform(p0.x, p0.y);
+    const [x2,y2] = svgXform(p1.x, p1.y);
+    // Purple→violet, dashed, speed-tinted opacity
+    const alpha = (0.4 + 0.4 * (p1.speed / maxS)).toFixed(2);
+    html += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="rgba(147,51,234,${alpha})" stroke-width="2.5" stroke-dasharray="5,3" stroke-linecap="round"/>`;
+  }
+  layer.innerHTML = html;
+}
+
+// ── Scrubber seek ─────────────────────────────────────────────────────────────
+let _scrubbing = false;
+
+(function initScrubber() {
+  const scr = document.getElementById('scrubber');
+  if (!scr) return;
+  scr.addEventListener('mousedown', () => { _scrubbing = true; });
+  scr.addEventListener('touchstart', () => { _scrubbing = true; });
+  scr.addEventListener('input', () => {
+    // Show elapsed time while scrubbing
+    if (totalStreamFrames > 0) {
+      const pct = scr.value / totalStreamFrames;
+      const fillPct = (pct * 100).toFixed(1);
+      scr.style.background = `linear-gradient(90deg, var(--red) 0%, var(--red) ${fillPct}%, var(--border) ${fillPct}%)`;
+      const el = document.getElementById('scr-elapsed');
+      // Estimate time from frames (assume ~100Hz)
+      if (el && lapTimeSec > 0 && currentFrameIdx > 0) {
+        const estT = lapTimeSec * (scr.value / currentFrameIdx);
+        el.textContent = fmtTimeShort(estT);
+      }
+    }
+  });
+  scr.addEventListener('change', () => {
+    _scrubbing = false;
+    const seekFrame = parseInt(scr.value);
+    if (currentSession && (isPlaying || frameCount > 0)) {
+      // Start stream from this frame (keep isPlaying state)
+      const wasPlaying = isPlaying;
+      startStream(seekFrame);
+      if (!wasPlaying) stopStream();
+    }
+  });
+})();
+
+function fmtTimeShort(s) {
+  if (!s || s <= 0) return '0:00';
+  const m = Math.floor(s/60);
+  const sec = Math.floor(s%60).toString().padStart(2,'0');
+  return `${m}:${sec}`;
+}
+
+// ── Camera management ─────────────────────────────────────────────────────────
+async function loadAvailableCameras() {
+  if (!currentSession) return;
+  try {
+    const r = await fetch(`${API}/analysis/${currentSession}/cameras`);
+    const data = await r.json();
+    const selector = document.getElementById('cam-selector');
+    if (!selector) return;
+
+    // Update selector options
+    const cams = data.cameras || ['camera_fl'];
+    selector.innerHTML = '';
+
+    const labels = {
+      'camera_fl': 'Front Left',
+      'camera_r': 'Right',
+      'camera_fr': 'Front Right',
+      'camera_b': 'Rear',
+      'camera_br': 'Rear Right'
+    };
+
+    for (const cam of cams) {
+      const opt = document.createElement('option');
+      opt.value = cam;
+      opt.textContent = labels[cam] || cam.replace(/_/g, ' ').toUpperCase();
+      selector.appendChild(opt);
+    }
+    selector.value = currentCamera;
+    console.log('[CAMERA] Available:', cams);
+  } catch(e) {
+    console.warn('[CAMERA] Load failed:', e);
+  }
+}
+
+function onCameraChange() {
+  const selector = document.getElementById('cam-selector');
+  if (!selector) return;
+  const newCam = selector.value;
+  if (newCam === currentCamera) return;
+
+  const savedFrame = currentFrameIdx;
+  currentCamera = newCam;
+
+  const labels = {
+    'camera_fl': 'Front Left',
+    'camera_r': 'Right',
+    'camera_fr': 'Front Right',
+    'camera_b': 'Rear',
+    'camera_br': 'Rear Right',
+  };
+  const label = labels[newCam] || newCam.replace(/_/g,' ').toUpperCase();
+
+  // Update ptitle label and LIVE indicator text
+  const ptitleSpan = document.querySelector('#cam-wrap').closest('.panel').querySelector('.ptitle span');
+  if (ptitleSpan) ptitleSpan.textContent = '📷 Onboard — ' + label;
+  const liveDot = document.getElementById('cam-live');
+  if (liveDot) liveDot.querySelector('.cam-livedot + span, span:last-child') && (liveDot.lastChild.textContent = 'LIVE · ' + label.toUpperCase());
+
+  console.log('[CAMERA] Switched to:', newCam, 'from frame:', savedFrame);
+  if (isPlaying) {
+    // Resume from the same position with new camera
+    startStream(savedFrame);
+  }
 }
 
 // ── Track Map ────────────────────────────────────────────────────────────────
@@ -793,6 +1431,10 @@ function renderTrack() {
   svg.removeAttribute('width');
   svg.removeAttribute('height');
 
+  // ── Store base viewBox so zoom/pan can reference it ──
+  _baseVB = {x: 0, y: 0, w: vW, h: vH};
+  _curVB  = {x: 0, y: 0, w: vW, h: vH};
+
   // Build inner track fill from outer minus inner (donut shape via even-odd fill)
   const outerPath = toPath(trackData.outer) + ' Z';
   const innerPath = toPath(trackData.inner) + ' Z';
@@ -812,7 +1454,9 @@ function renderTrack() {
     <path d="${innerPath}" fill="none" stroke="#2a2a40" stroke-width="1.5"/>
     <!-- Centerline (racing line guide) -->
     <path d="${toPath(trackData.centerline)}" fill="none" stroke="#00b4d8" stroke-width="1" stroke-dasharray="4,8" opacity=".25"/>
-    <!-- Path layer for lap path overlay -->
+    <!-- Ideal (best lap) racing line — loaded on demand -->
+    <g id="ideal-line-layer"></g>
+    <!-- Path layer for current lap driver path (speed-coloured) -->
     <g id="path-layer"></g>
     <!-- Corner markers -->
     ${(trackData.corners||[]).map(c=>{
@@ -844,7 +1488,7 @@ function moveCar(x, y) {
   glow.setAttribute('cx', sx.toFixed(1));
   glow.setAttribute('cy', sy.toFixed(1));
   trailPts.push([sx, sy]);
-  if (trailPts.length > 60) trailPts.shift();
+  if (trailPts.length > 300) trailPts.shift(); // longer trail
   document.getElementById('trail').setAttribute('points',
     trailPts.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
   );
@@ -889,11 +1533,65 @@ function showCamera(jpeg_b64) {
 }
 
 function updateSteer(rad) {
-  const deg = rad * 180 / Math.PI;
-  const clamped = Math.max(-180, Math.min(180, deg));
-  const line = document.getElementById('steer-line');
-  // Rotate line around center (22,22)
-  line.setAttribute('transform', `rotate(${clamped.toFixed(1)}, 22, 22)`);
+  const canvas = document.getElementById('steer-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const r = Math.min(W, H) / 2 - 5;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // delta_wheel_rad → steering wheel angle (×steering ratio 15)
+  const steerRatio = 15;
+  const steerDeg = (rad || 0) * steerRatio * (180 / Math.PI);
+  // Normalise to ±1 (full lock = ±450°)
+  const norm = Math.max(-1, Math.min(1, steerDeg / 450));
+
+  const col = Math.abs(norm) > 0.7 ? '#ff3b30'
+             : Math.abs(norm) > 0.35 ? '#ffd60a'
+             : '#0a84ff';
+
+  // Background ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,.1)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Filled arc from 12 o'clock to current position
+  const startA = -Math.PI / 2;
+  const sweep  = norm * Math.PI * 0.85; // ±153° at full lock
+  if (Math.abs(norm) > 0.02) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, startA, startA + sweep, sweep < 0);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+
+  // Indicator dot at current position
+  const dotA = startA + sweep;
+  const dx = cx + Math.cos(dotA) * r;
+  const dy = cy + Math.sin(dotA) * r;
+  ctx.beginPath();
+  ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = Math.abs(norm) > 0.02 ? col : 'rgba(255,255,255,.3)';
+  ctx.fill();
+
+  // 12 o'clock tick mark
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r - 1);
+  ctx.lineTo(cx, cy - r + 5);
+  ctx.strokeStyle = 'rgba(255,255,255,.25)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Centre dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,.25)';
+  ctx.fill();
 }
 
 // ── GG Diagram ────────────────────────────────────────────────────────────────
@@ -1019,29 +1717,91 @@ function togglePlay() {
   isPlaying ? stopStream() : startStream();
 }
 
-function startStream() {
+// startStream(startFrame=0): start or resume stream from a specific frame index.
+// Pass startFrame>0 for speed-change resume — skips re-rendering trail etc.
+function startStream(startFrame) {
   if (!currentSession) { alert('Select a session first'); return; }
+  startFrame = (startFrame > 0) ? Math.floor(startFrame) : 0;
+  const resuming = startFrame > 0;
   stopStream();
   isPlaying = true;
-  frameCount = 0; camCount = 0; trailPts = [];
-  ggHistory = []; miniChartData = [];
+  frameCount = 0; camCount = 0;
+  if (!resuming) {
+    trailPts = []; ggHistory = []; miniChartData = [];
+    _worldTrail = []; _mmBounds = null;
+    _smoothBrake = 0; _smoothThr = 0;
+    currentFrameIdx = 0;
+  }
   ggRedrawCounter = 0;
-  carPrev = null; carNext = null; // reset car interpolation
+  carPrev = null; carNext = null;
   document.getElementById('play-btn').textContent = '⏸ Pause';
 
-  const url = `${API}/stream/${currentSession}/lap/${currentLap}?speed=${speedFactor}`;
+  const url = `${API}/stream/${currentSession}/lap/${currentLap}?speed=${speedFactor}&camera=${currentCamera}&start_frame=${startFrame}`;
   es = new EventSource(url);
+
+  // Stream metadata — fires once at stream start
+  es.addEventListener('stream_meta', e => {
+    const m = JSON.parse(e.data);
+    totalStreamFrames = m.total_frames || 0;
+    if (m.lap_dist_m > 0) lapDistTotal = m.lap_dist_m;
+    if (totalStreamFrames > 0) {
+      const scrubberEl = document.getElementById('scrubber');
+      if (scrubberEl) scrubberEl.max = totalStreamFrames - 1;
+    }
+  });
 
   es.addEventListener('frame', e => {
     const f = JSON.parse(e.data);
     frameCount++;
+
+    // Track absolute frame index for seek/resume
+    if (f.frame_idx != null) currentFrameIdx = f.frame_idx;
+    lapTimeSec = f.t || 0;
+
     updateDash(f);
+
+    // Show HUD elements on first frame (don't wait for camera)
+    if (frameCount === 1) {
+      document.getElementById('cam-nosig').style.display = 'none';
+      document.getElementById('cam-live').style.display = 'flex';
+      document.getElementById('cam-speed-hud').style.display = 'block';
+      document.getElementById('cam-gear-hud').style.display = 'block';
+      document.getElementById('steer-wrap').style.display = 'block';
+      document.getElementById('speed-compare').style.display = 'flex';
+      document.getElementById('coaching-panel').style.display = 'flex';
+      document.getElementById('traj-canvas').style.display = 'block';
+      console.log('[COACHING] Init: distance_m=' + (f.distance_m !== null ? f.distance_m.toFixed(0)+'m' : 'NULL'));
+      console.log('[COACHING] ref_speed=' + (f.ref_speed || 'NONE'));
+    }
 
     // Feed interpolation engine (rAF loop draws the car smoothly)
     carPrev = carNext || {x: f.x, y: f.y};
     carNext = {x: f.x, y: f.y};
     carRecvAt = performance.now();
     carIntervalMs = (1000 / 100) / speedFactor; // 100 Hz stream → 10ms intervals
+
+    // Update trajectory canvas (ideal vs actual path on camera overlay)
+    updateMiniMapCam(f.x, f.y);
+
+    // Show trajectory canvas and label once live
+    if (frameCount === 2 && trackData) {
+      const tc = document.getElementById('traj-canvas');
+      const tl = document.getElementById('traj-label');
+      if (tc) tc.style.display = 'block';
+      if (tl) tl.style.display = 'block';
+    }
+
+    // Update scrubber
+    if (totalStreamFrames > 0 && !_scrubbing) {
+      const pct = currentFrameIdx / totalStreamFrames;
+      const scrEl = document.getElementById('scrubber');
+      if (scrEl) scrEl.value = currentFrameIdx;
+      const fillPct = (pct * 100).toFixed(1);
+      if (scrEl) scrEl.style.background =
+        `linear-gradient(90deg, var(--red) 0%, var(--red) ${fillPct}%, rgba(255,255,255,.08) ${fillPct}%)`;
+      const elapsed = document.getElementById('scr-elapsed');
+      if (elapsed) elapsed.textContent = fmtTimeShort(lapTimeSec);
+    }
 
     ggHistory.push({lat:f.lat_acc, lon:f.lon_acc, spd:f.speed});
     if (ggHistory.length > 2000) ggHistory.shift();
@@ -1073,6 +1833,7 @@ function startStream() {
 
   es.addEventListener('coach_tip', e => {
     const ev = JSON.parse(e.data);
+    console.log('[COACH_TIP]', ev.kind, ev.corner || '', ev.headline);
     handleCoachEvent(ev);
   });
 
@@ -1096,28 +1857,51 @@ function startStream() {
   es.onerror = () => {
     if (isPlaying) setStatus(false, 'Stream error — check backend');
   };
+
+  // Fallback: if no coaching events after 6 sec, show a diagnostic message
+  setTimeout(() => {
+    if (isPlaying && !window._coachingActive && frameCount > 100) {
+      console.warn('[COACHING] No events fired after 6s. Checking diagnostics...');
+      handleCoachEvent({
+        kind: 'motivation',
+        headline: '🔍 COACHING DIAGNOSTIC',
+        detail: 'Coach is running but no corners detected yet. Check that distance_m is set on frames.',
+        icon: '⚙️',
+        delta_s: null,
+      });
+    }
+  }, 6000);
 }
 
 function stopStream() {
   if (es) { es.close(); es = null; }
   isPlaying = false;
-  document.getElementById('play-btn').textContent = '▶ Play';
+  const pb = document.getElementById('play-btn');
+  if (pb) pb.textContent = '▶ Play';
+  // Note: intentionally keep currentFrameIdx so speed-change resume works
 }
 
 function setSpeed(s) {
+  const savedFrame = currentFrameIdx;   // capture before stopStream() clears it
   speedFactor = s;
-  [1,2,4].forEach(n => {
-    const el = document.getElementById('sp'+n);
-    el.classList.toggle('act', n===s);
+  // Toggle active state on all speed buttons using data-spd attribute
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.classList.toggle('act', parseFloat(btn.dataset.spd) === s);
   });
-  if (isPlaying) startStream();
+  if (isPlaying) {
+    // Resume from the same frame — no restart from lap beginning!
+    startStream(savedFrame);
+  }
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
 function updateDash(f) {
   const spd = Math.round(f.speed||0);
-  const thr = Math.round((f.throttle||0)*100);
-  const brk = Math.round((f.brake||0)*100);
+  // Exponential moving average to smooth binary-looking brake/throttle data
+  _smoothThr   = _smoothThr   + _EMA_ALPHA * ((f.throttle||0) - _smoothThr);
+  _smoothBrake = _smoothBrake + _EMA_ALPHA * ((f.brake||0)    - _smoothBrake);
+  const thr = Math.round(_smoothThr  * 100);
+  const brk = Math.round(_smoothBrake * 100);
   const rpm = Math.round(f.rpm||0);
 
   // Speed with colour
@@ -1295,8 +2079,10 @@ function fmtTime(s) {
   return `${m}:${sec}`;
 }
 
-// Default 1× active
-document.getElementById('sp1').classList.add('act');
+// Default 1× active (already set via class in HTML; also ensure data-spd based toggle works)
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.classList.toggle('act', parseFloat(btn.dataset.spd) === speedFactor);
+});
 
 // ── Speed Compare HUD ────────────────────────────────────────────────────────
 function updateSpeedCompare(f) {
@@ -1409,7 +2195,13 @@ function handleCoachEvent(ev) {
   // Show queue count
   const qdot = document.getElementById('radio-queue-dot');
   if (qdot) qdot.textContent = _radioQueue.length > 1 ? `+${_radioQueue.length-1} queued` : '';
-  if (!_radioPlaying) _playNextCoachEvent();
+  if (!_radioPlaying) {
+    _playNextCoachEvent();
+    window._coachingActive = true;
+  }
+
+  // ── Camera overlay: show coaching text directly on the video feed
+  showCoachOnCamera(ev);
 
   // Trigger visual HUD cues for recommendations
   if (ev.kind === 'recommendation') {

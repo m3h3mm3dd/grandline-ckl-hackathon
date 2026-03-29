@@ -8,7 +8,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from services.mcap_reader import stream_frames, stream_camera_frames, RawFrame
+from services.mcap_reader import (
+    stream_frames, stream_camera_frames, RawFrame,
+    TOPIC_CAMERA_FL, TOPIC_CAMERA_R,
+)
 from services.lap_detector import detect_laps
 from services.metrics_engine import compute_lap_detail, LapDetail
 from models.schemas import SessionMeta
@@ -44,9 +47,11 @@ class Session:
         self._ready       = asyncio.Event()
         self.corner_map   = None
         self.meta_preloaded: bool = False
-        # Camera frames per lap: list[list[tuple[float, bytes]]]
-        # Each inner list is sorted by timestamp; bytes are raw JPEG
-        self.camera_laps: list[list[tuple[float, bytes]]] = []
+        # Multi-camera support: dict[camera_id] → list[list[tuple[float, bytes]]]
+        # Each camera has frames binned per lap; bytes are raw JPEG
+        self.camera_laps_by_topic: dict[str, list[list[tuple[float, bytes]]]] = {}
+        # Backward compat: alias to front-left camera
+        self.available_cameras: list[str] = []
 
     async def process(self):
         if self.corner_map is None:
@@ -78,11 +83,12 @@ class Session:
 
     def _load_camera_frames(self):
         """
-        Read the front-left camera topic and bin frames into laps by timestamp.
-        Stores ~10 Hz JPEG frames per lap for SSE streaming.
+        Load all available camera topics and bin frames into laps by timestamp.
+        Supports multiple cameras (front-left, right, etc.).
         """
         if not self.raw_laps:
-            self.camera_laps = []
+            self.camera_laps_by_topic = {}
+            self.available_cameras = []
             return
 
         # Build lap time-windows
@@ -90,20 +96,38 @@ class Session:
             (lap[0].ts, lap[-1].ts)
             for lap in self.raw_laps
         ]
-        buckets: list[list[tuple[float, bytes]]] = [[] for _ in self.raw_laps]
 
-        try:
-            for ts, jpeg in stream_camera_frames(self.mcap_path):
-                for i, (t_start, t_end) in enumerate(lap_windows):
-                    if t_start <= ts <= t_end:
-                        buckets[i].append((ts, jpeg))
-                        break
-        except Exception as e:
-            log.warning("Camera frame load failed: %s", e)
+        # Try to load each camera topic
+        cameras_to_try = [
+            ("camera_fl", TOPIC_CAMERA_FL),
+            ("camera_r", TOPIC_CAMERA_R),
+        ]
 
-        self.camera_laps = buckets
-        total = sum(len(b) for b in buckets)
-        log.info("  %d camera frames loaded across %d laps", total, len(buckets))
+        for cam_name, topic in cameras_to_try:
+            try:
+                buckets: list[list[tuple[float, bytes]]] = [[] for _ in self.raw_laps]
+                frame_count = 0
+
+                for ts, jpeg in stream_camera_frames(self.mcap_path, topic=topic):
+                    for i, (t_start, t_end) in enumerate(lap_windows):
+                        if t_start <= ts <= t_end:
+                            buckets[i].append((ts, jpeg))
+                            frame_count += 1
+                            break
+
+                if frame_count > 0:
+                    self.camera_laps_by_topic[cam_name] = buckets
+                    self.available_cameras.append(cam_name)
+                    log.info("  Camera '%s': %d frames across %d laps", cam_name, frame_count, len(buckets))
+            except Exception as e:
+                log.debug("Camera '%s' not available: %s", cam_name, e)
+
+        log.info("  Available cameras: %s", self.available_cameras)
+
+    @property
+    def camera_laps(self) -> list[list[tuple[float, bytes]]]:
+        """Backward compatibility: return front-left camera frames."""
+        return self.camera_laps_by_topic.get("camera_fl", [])
 
     async def wait_ready(self, timeout: float = 120.0):
         await asyncio.wait_for(self._ready.wait(), timeout=timeout)
