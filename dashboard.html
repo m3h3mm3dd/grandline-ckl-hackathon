@@ -273,6 +273,17 @@ header select:hover{border-color:var(--border-strong)}
 .tyre-cell.warm .tyre-temp{color:var(--yellow)}
 .tyre-cell.cold .tyre-temp{color:var(--blue)}
 
+/* Suspension cells (reuse tyre-grid layout) */
+.susp-cell{background:var(--surf);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;transition:border-color .3s}
+.susp-val{font-size:1rem;font-weight:800;font-family:var(--mono);color:var(--muted)}
+.susp-cell.compressed .susp-val{color:var(--red)}
+.susp-cell.normal .susp-val{color:var(--green)}
+.susp-cell.extended .susp-val{color:var(--blue)}
+.susp-rh{display:flex;gap:4px;margin-top:4px}
+.susp-rh-val{flex:1;background:var(--surf);border:1px solid var(--border);border-radius:5px;padding:4px 6px;text-align:center}
+.susp-rh-label{font-size:.55rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.susp-rh-num{font-size:.9rem;font-weight:800;font-family:var(--mono);color:var(--yellow)}
+
 /* Corner mini stats */
 .mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .mini-stat{background:var(--surf);border:1px solid var(--border);border-radius:5px;padding:5px 8px;text-align:center}
@@ -650,6 +661,21 @@ header select:hover{border-color:var(--border-strong)}
       <div class="tyre-cell cold" id="t-fr"><div class="tyre-pos">FR</div><div class="tyre-temp" id="tv-fr">—</div></div>
       <div class="tyre-cell cold" id="t-rl"><div class="tyre-pos">RL</div><div class="tyre-temp" id="tv-rl">—</div></div>
       <div class="tyre-cell cold" id="t-rr"><div class="tyre-pos">RR</div><div class="tyre-temp" id="tv-rr">—</div></div>
+    </div>
+  </div>
+
+  <!-- SUSPENSION / DAMPER STROKE -->
+  <div class="stat-block" id="susp-block">
+    <div class="stat-block-title">Suspension / Damper Stroke (mm)</div>
+    <div class="tyre-grid">
+      <div class="susp-cell normal" id="s-fl"><div class="tyre-pos">FL</div><div class="susp-val" id="sv-fl">—</div></div>
+      <div class="susp-cell normal" id="s-fr"><div class="tyre-pos">FR</div><div class="susp-val" id="sv-fr">—</div></div>
+      <div class="susp-cell normal" id="s-rl"><div class="tyre-pos">RL</div><div class="susp-val" id="sv-rl">—</div></div>
+      <div class="susp-cell normal" id="s-rr"><div class="tyre-pos">RR</div><div class="susp-val" id="sv-rr">—</div></div>
+    </div>
+    <div class="susp-rh" id="susp-rh-row" style="display:none">
+      <div class="susp-rh-val"><div class="susp-rh-label">Ride Ht Front</div><div class="susp-rh-num" id="sv-rh-front">—</div></div>
+      <div class="susp-rh-val"><div class="susp-rh-label">Ride Ht Rear</div><div class="susp-rh-num" id="sv-rh-rear">—</div></div>
     </div>
   </div>
 
@@ -1669,6 +1695,34 @@ function updateTyres(f) {
   });
 }
 
+// ── Suspension / Damper Stroke ────────────────────────────────────────────────
+function updateSuspension(f) {
+  const corners = ['fl','fr','rl','rr'];
+  let anyDamper = false;
+  corners.forEach(c => {
+    const val = f['ride_height_' + c];
+    const el   = document.getElementById('sv-' + c);
+    const cell = document.getElementById('s-' + c);
+    if (val != null && val > 0) {
+      anyDamper = true;
+      el.textContent = val.toFixed(1);
+      // Color: >60mm compressed (heavy load), <15mm extended, else normal
+      cell.className = 'susp-cell ' + (val > 60 ? 'compressed' : val < 15 ? 'extended' : 'normal');
+    }
+  });
+
+  // True ride heights (optical sensor) — show row only when data present
+  const rhFront = f.rh_front, rhRear = f.rh_rear;
+  const rhRow = document.getElementById('susp-rh-row');
+  if ((rhFront != null && rhFront > 0) || (rhRear != null && rhRear > 0)) {
+    if (rhRow) rhRow.style.display = 'flex';
+    const fEl = document.getElementById('sv-rh-front');
+    const rEl = document.getElementById('sv-rh-rear');
+    if (fEl && rhFront != null && rhFront > 0) fEl.textContent = rhFront.toFixed(1) + ' mm';
+    if (rEl && rhRear  != null && rhRear  > 0) rEl.textContent = rhRear.toFixed(1)  + ' mm';
+  }
+}
+
 // ── Mini speed chart ──────────────────────────────────────────────────────────
 function drawMiniChart() {
   const canvas = document.getElementById('mini-chart');
@@ -1820,6 +1874,7 @@ function startStream(startFrame) {
     drawMiniChart();
     updateDebug();
     updateTyres(f);
+    updateSuspension(f);
     updateSystems(f);
     updateSpeedCompare(f);
   });

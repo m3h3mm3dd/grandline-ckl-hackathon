@@ -16,6 +16,7 @@ from models.schemas import (
     SectorSummary, LapComparison,
     TrackData, DeltaTimeSeries, TheoreticalBest,
     CornerScoreboard, CornerScoreRow,
+    SuspensionReport,
 )
 
 router = APIRouter()

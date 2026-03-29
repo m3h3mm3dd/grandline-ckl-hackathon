@@ -55,6 +55,7 @@ class RawFrame:
         "tyre_temp_fl", "tyre_temp_fr", "tyre_temp_rl", "tyre_temp_rr",
         "brake_press_fl", "brake_press_fr",
         "ride_height_fl", "ride_height_fr", "ride_height_rl", "ride_height_rr",
+        "rh_front", "rh_rear",          # true ride height from optical sensor (mm)
         "wheel_load_fl", "wheel_load_fr", "wheel_load_rl", "wheel_load_rr",
         "brake_disc_temp_fl", "brake_disc_temp_fr",
         "distance_m",
@@ -88,6 +89,7 @@ class RawFrame:
         self.brake_press_fl = self.brake_press_fr = None
         self.ride_height_fl = self.ride_height_fr = None
         self.ride_height_rl = self.ride_height_rr = None
+        self.rh_front = self.rh_rear = None   # centerline optical ride height (mm)
         self.wheel_load_fl = self.wheel_load_fr = None
         self.wheel_load_rl = self.wheel_load_rr = None
         self.brake_disc_temp_fl = self.brake_disc_temp_fr = None
@@ -185,10 +187,12 @@ def stream_frames(mcap_path: str | Path) -> Generator[RawFrame, None, None]:
                 elif topic == TOPIC_RIDE_F:
                     side["ride_height_fl"] = float(ros_msg.damper_stroke_fl)
                     side["ride_height_fr"] = float(ros_msg.damper_stroke_fr)
+                    side["rh_front"] = float(ros_msg.ride_height_front)
 
                 elif topic == TOPIC_RIDE_R:
                     side["ride_height_rl"] = float(ros_msg.damper_stroke_rl)
                     side["ride_height_rr"] = float(ros_msg.damper_stroke_rr)
+                    side["rh_rear"] = float(ros_msg.ride_height_rear)
 
                 elif topic == TOPIC_WHEEL_LOAD:
                     # Note: msg order is fl, fr, rr, rl (not fl, fr, rl, rr)
