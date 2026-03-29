@@ -66,38 +66,84 @@ It is especially useful for:
 
 Instead of comparing laps by timestamp, GRANDLINE aligns them by **track position**, which is the correct race-engineering approach when you want to understand where and why time is gained or lost. 📍
 
----
+## How to Run 🏁💻
 
-How to Run 🏁💻
-1. Clone the repository
+Get **GRANDLINE** running locally in just a few minutes.
+
+> [!IMPORTANT]
+> GRANDLINE expects the provided hackathon dataset to be placed in a specific local folder structure before startup.
+
+### 1) Clone the repository
+
+```bash
 git clone https://github.com/m3h3mm3dd/grandline-ckl-hackathon
 cd grandline-ckl-hackathon
+```
 
-2. Install dependencies
+### 2) Install dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-3. Prepare the data folder
+### 3) Add the hackathon data
 
-Make sure your project has this structure:
+Create the following folder structure inside the project root:
 
+```text
 grandline-ckl-hackathon/
-  data/
-    hackathon/
-      hackathon_good_lap.mcap
-      hackathon_fast_laps.mcap
-      hackathon_wheel_to_wheel.mcap
-      yas_marina_bnd.json
+├── data/
+│   └── hackathon/
+│       ├── hackathon_good_lap.mcap
+│       ├── hackathon_fast_laps.mcap
+│       ├── hackathon_wheel_to_wheel.mcap
+│       └── yas_marina_bnd.json
+```
 
-If this folder exists, GRANDLINE will automatically detect and preload the sessions at startup. 📦
+> [!NOTE]
+> GRANDLINE automatically detects this folder and preloads the sessions at startup. No extra configuration is required.
 
-4. Start the backend
+### 4) Start the backend
+
+Run this from the project root:
+
+```bash
 python -m uvicorn backend.main:app --reload --host localhost --port 8000
+```
 
-5. Start the frontend
+Backend will be available at:
 
-Open a second terminal in the same project folder and run:
+```text
+http://localhost:8000
+```
 
+Useful backend check:
+
+```text
+http://localhost:8000/preloaded
+```
+
+### 5) Start the frontend
+
+Open a **second terminal** in the same project folder and run:
+
+```bash
 python -m http.server 5500
+```
+
+Frontend will be available at:
+
+```text
+http://localhost:5500/dashboard.html
+```
+
+### 6) Open the dashboard
+
+Once both servers are running, open:
+
+```text
+http://localhost:5500/dashboard.html
+```
 
 ---
 
