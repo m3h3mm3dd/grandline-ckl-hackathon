@@ -11,7 +11,7 @@ The three hackathon sessions are automatically loaded at startup so the product 
 
 ---
 
-## Demo Screenshots 📸
+### Demo Screenshots 📸
 
 ### Main dashboard
 ![GRANDLINE main dashboard](docs/images/dashboard-main.jpeg)
