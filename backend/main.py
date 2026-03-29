@@ -117,7 +117,7 @@ app.include_router(stream.router,   prefix="/stream",   tags=["stream"])
 
 @app.get("/health")
 def health():
-    # Check how many sessions exist and how many are already processed/ready
+    # Check how many sessions exist and how many are already processed
     from services.session_store import _sessions
     ready = sum(1 for s in _sessions.values() if s._ready.is_set())
     return {
